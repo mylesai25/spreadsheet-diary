@@ -1,0 +1,4 @@
+Date,Gym,City,Climbers,Socks,Duration (minutes),V0 Attempted,V0 Completed,V1 Attempted,V1 Completed,V2 Attempted,V2 Completed,V3 Attempted,V3 Completed,V4 Attempted,V4 Completed,V5 Attempted,V5 Completed,V6 Attemped,V6 Completed,Green Attempted,Green Completed,Yellow Attempted,Yellow Completed,Orange Attempted,Orange Completed,Red Attempted,Red Completed,Purple Attempted,Purple Completed
+2026-01-07,Gravity Vault,Hoboken,,FALSE,60,0,0,4,4,5,4,4,3,1,0,0,0,0,0,,,,,,,,,,
+2026-01-21,Gravity Vault,Hoboken,,TRUE,45,0,0,2,2,3,3,2,2,1,0,0,0,0,0,,,,,,,,,,
+2026-03-07,Movement Gym,White Plains,"Joe, Wilson, Michael, Jiwei, Kevin",FALSE,60,1,1,2,2,3,3,4,3,2,0,0,0,0,0,,,,,,,,,,

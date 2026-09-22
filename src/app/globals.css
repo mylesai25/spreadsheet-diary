@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* Light palette (dataviz chrome tokens) */
+:root {
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --line: #e1e0d9;
+  --border: rgba(11, 11, 11, 0.1);
+  --accent: #1a7f37;
+  --accent-soft: #e2f3e6;
+  --accent-ink: #ffffff;
+  --danger: #d03b3b;
+  --warn: #fab219;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #262624;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --line: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #3fb950;
+    --accent-soft: #143a1e;
+    --accent-ink: #0b0b0b;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html { scroll-padding-top: 7rem; }
+
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Shared control look */
+.control {
+  @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-[15px] text-ink outline-none transition;
+  min-height: 2.5rem;
+}
+.control:focus-within, .control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent); }
+.control::placeholder { color: var(--muted); }
+
+.card { @apply rounded-2xl border border-border bg-surface; }
+
+.btn, .btn-primary, .btn-ghost { @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition select-none; }
+.btn-primary { @apply bg-accent text-accent-ink hover:brightness-110 disabled:opacity-50; }
+.btn-ghost { @apply border border-border bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink; }
+
+.seg { @apply inline-flex overflow-hidden rounded-lg border border-border bg-surface; }
+.seg > button, .seg > a { @apply whitespace-nowrap px-3 py-1.5 text-sm text-ink-2 transition hover:bg-surface-2; min-width: 2.25rem; }
+.seg > * + * { border-left: 1px solid var(--border); }
+.seg > button[aria-pressed="true"], .seg > button[aria-checked="true"], .seg > [aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.chip { @apply inline-flex items-center gap-1 rounded-md bg-surface-2 px-2 py-0.5 text-sm text-ink; }
+
+.recharts-tooltip-wrapper { outline: none; }
+
+/* Data-viz series — green-led ordering (green → blue → orange → yellow), validated with the
+   dataviz palette checker in both modes: worst adjacent CVD ΔE 23.5 light / 26.8 dark. */
+:root {
+  --series-1: #008300; --series-2: #2a78d6; --series-3: #eb6834; --series-4: #eda100;
+  --viz-grid: #e1e0d9; --viz-axis: #c3c2b7; --viz-muted: #898781;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --series-1: #008300; --series-2: #3987e5; --series-3: #d95926; --series-4: #c98500; --viz-grid: #2c2c2a; --viz-axis: #383835; }
+}

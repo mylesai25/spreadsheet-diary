@@ -1,0 +1,27 @@
+Date,Gym,City,Climbers,Duration (minutes),V0 Attempted,V0 Completed,V1 Attempted,V1 Completed,V2 Attempted,V2 Completed,V3 Attempted,V3 Completed,V4 Attempted,V4 Completed,V5 Attempted,V5 Completed,V6 Attemped,V6 Completed,Green Attempted,Green Completed,Yellow Attempted,Yellow Completed,Orange Attempted,Orange Completed,Red Attempted,Red Completed,Purple Attempted,Purple Completed
+2025-01-16,VITAL,Manhattan,"Wilson, Leo, Keith, Dan",120,,,,,,,,,,,,,,,0,0,5,5,6,2,1,0,0,0
+2025-01-22,Gravity Vault,Hoboken,,60,1,1,4,4,5,5,5,4,3,0,0,0,,,,,,,,,,,,
+2025-02-12,VITAL,Manhattan,"Wilson, Joe",180,,,,,,,,,,,,,,,0,0,5,5,6,2,1,0,0,0
+2025-02-14,VITAL,Manhattan,"Wilson, Joe, Keith",120,,,,,,,,,,,,,,,1,1,7,6,9,4,2,0,0,0
+2025-02-19,VITAL,Manhattan,"Wilson, Joe, Keith",120,,,,,,,,,,,,,,,0,0,5,5,8,5,2,1,0,0
+2025-03-03,VITAL,Manhattan,"Wilson, Joe",180,,,,,,,,,,,,,,,1,1,5,5,13,10,2,1,0,0
+2025-03-07,Gravity Vault,Hoboken,"Joe, Jiwei",60,1,1,4,4,4,4,3,3,2,1,1,1,,,,,,,,,,,,
+2025-03-19,Gravity Vault,Hoboken,,60,1,1,1,1,2,2,3,3,3,2,2,1,1,0,,,,,,,,,,
+2025-03-26,VITAL,Manhattan,"Wilson, Joe, Keith",120,,,,,,,,,,,,,,,0,0,3,3,13,8,2,0,0,0
+2025-04-02,Gravity Vault,Hoboken,,120,1,1,2,2,2,2,4,3,3,2,0,0,0,0,,,,,,,,,,
+2025-04-12,VITAL,Manhattan,"Wilson, Joe, Keith",90,,,,,,,,,,,,,,,1,1,4,4,9,6,2,0,0,0
+2025-04-30,Gravity Vault,Hoboken,,60,1,1,3,3,2,2,4,4,3,2,1,1,0,0,,,,,,,,,,
+2025-05-21,Gravity Vault,Hoboken,,60,,,,,,,,,,,,,,,,,,,,,,,,
+2025-07-15,VITAL,Manhattan,"Wilson, Joe",60,,,,,,,,,,,,,,,0,0,4,4,6,3,2,0,0,0
+2025-07-22,VITAL,Manhattan,"Wilson, Joe",180,,,,,,,,,,,,,,,0,0,2,2,6,5,3,0,1,0
+2025-08-01,Gravity Vault,Hoboken,,60,0,0,1,1,3,3,2,1,1,1,1,1,0,0,,,,,,,,,,
+2025-08-15,Gravity Vault,Hoboken,,60,0,0,2,2,4,4,4,3,2,1,1,0,0,0,,,,,,,,,,
+2025-09-17,VITAL,Manhattan,Joe,180,,,,,,,,,,,,,,,0,0,5,5,9,6,1,0,0,0
+2025-09-24,Gravity Vault,Hoboken,,90,0,0,2,2,3,3,7,5,1,0,1,0,1,1,,,,,,,,,,
+2025-09-25,Gravity Vault,Hoboken,,60,0,0,1,1,2,2,3,3,1,0,1,0,2,1,,,,,,,,,,
+2025-09-29,VITAL,Manhattan,Joe,120,,,,,,,,,,,,,,,0,0,2,2,6,5,3,0,0,0
+2025-09-30,Gravity Vault,Hoboken,,60,0,0,0,0,2,2,5,5,1,1,2,0,1,0,,,,,,,,,,
+2025-10-01,Gravity Vault,Hoboken,,60,0,0,0,0,2,2,5,5,1,1,2,0,0,0,,,,,,,,,,
+2025-10-10,Gravity Vault,Hoboken,,60,0,0,1,1,3,3,3,3,2,1,0,0,0,0,,,,,,,,,,
+2025-10-24,Central Rock Gym,Worcester,,60,0,0,2,2,3,3,3,2,2,0,0,0,0,0,,,,,,,,,,
+2025-12-03,Gravity Vault,Hoboken,Joe,60,0,0,2,2,2,2,3,2,2,1,1,0,0,0,,,,,,,,,,
