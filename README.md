@@ -10,6 +10,12 @@ It reads and writes the Google Sheet directly — the sheet stays the source of 
   **Weather** (Sky / High / Low / Feels like) is auto-filled from [Open-Meteo](https://open-meteo.com) (no API key)
   for where you slept the previous night; "↻ Get weather" re-pulls it for whatever Wake Up City is on the form.
   Feels like = apparent temperature at your wake-up hour.
+  **Outfit ideas** in the Outfit section: three weather-appropriate outfits assembled from what you actually wear on
+  days that felt similar (temperature band, wet/dry, season), favoring pieces you haven't worn lately, and respecting
+  weekday color habits it detects in your history (e.g. blue shirts on Tuesdays) — no LLM involved. Hat/jacket only
+  appear when you usually wear one in that weather (≥60% of similar days); socks follow the shoe (none with sandals).
+  "Wear this" fills all the outfit fields; **↻ New ideas** gives a different set for the same weather (pieces already
+  shown are set aside and the ranking reshuffled; resets when the weather changes).
 - **Dashboard** (`/`) — stat tiles and charts over 7d / 30d / 90d / YTD / all: sleep, fun & productivity,
   steps, gym days, cooked vs. ate out, drinks, golf, resting HR, shirt colors, sky, cities, people, cuisines…
 - **Insights** (`/insights`) — the charts from the old `Diary_Graphs` Colab notebook, live: year calendars
@@ -53,12 +59,14 @@ On your Mac it's reachable on the same Wi‑Fi at `http://<your-mac-name>.local:
 
 ### Deploy to Vercel
 
+Live at **https://spreadsheet-diary.vercel.app** (project `spreadsheet-diary`, password-gated). Redeploy with:
+
 ```bash
-npx vercel                        # link the repo
+npx vercel --prod
 ```
-Set the same variables as `.env.local` in the Vercel project (`SHEET_ID`, `CLOSET_SHEET_ID`,
-`GOOGLE_SERVICE_ACCOUNT_JSON`, `APP_TZ`) **plus `APP_PASSWORD`** — that turns on the login gate so only
-you can write to your sheet. Nothing else changes.
+Env vars on Vercel mirror `.env.local` (`SHEET_ID`, `CLOSET_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `APP_TZ`)
+**plus `APP_PASSWORD`**, which turns on the login gate (and bearer auth for `/api`). `.vercelignore` keeps
+`mobile/` and the data snapshots out of the upload.
 
 ## Flutter app (`mobile/`)
 
@@ -70,6 +78,7 @@ A native client (iOS / Android / macOS / web) that uses this app as its backend 
 | `GET /api/schema` | Daily Overview sections/fields — the app renders its form from this |
 | `GET /api/daily?date=` · `POST /api/daily` | load a day (values, defaults, options, closet) · save changed cells |
 | `POST /api/weather` | Open‑Meteo lookup for a date + place |
+| `GET /api/outfits?date=&feels=&high=&sky=&seen=&seed=` | weather-aware outfit suggestions; pass back `shownKeys` as `seen` and bump `seed` for a new set |
 | `GET /api/dashboard?range=` | dashboard metrics |
 | `GET /api/activities` · `GET/POST /api/activities/:slug` | activity sheets |
 
@@ -85,6 +94,7 @@ src/lib/store/            Store interface: SheetsStore (googleapis) and CsvStore
 src/lib/schema/           daily.ts (sections/fields), closet.ts (closet → outfit columns), activities.ts
 src/lib/daily.ts          load a date's row, defaults, suggestion lists; diff-based save
 src/lib/metrics.ts        dashboard aggregation
+src/lib/outfits.ts        weather-aware outfit suggester (similar-day scoring + freshness)
 src/app/api/              JSON API used by the Flutter client
 src/proxy.ts              optional password gate (active only when APP_PASSWORD is set; /api uses bearer auth)
 mobile/                   Flutter client (see mobile/README.md)

@@ -1,0 +1,10 @@
+# Not needed on the server
+mobile
+data/*.xlsx
+data/csv-2024
+data/csv-2025
+data/closet
+scripts
+*.png
+!public/*.png
+!src/app/*.png

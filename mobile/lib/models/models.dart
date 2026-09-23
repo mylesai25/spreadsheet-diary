@@ -83,8 +83,9 @@ class ClosetItem {
 class DailyData {
   DailyData({
     required this.date, required this.today, required this.values, required this.defaults, required this.prev, this.prevDate,
-    required this.options, required this.closet, required this.isLogged, required this.loggedDates, required this.storeKind, this.weatherNote,
+    required this.options, required this.closet, required this.isLogged, required this.loggedDates, required this.storeKind, this.weatherNote, this.outfits,
   });
+  final OutfitSuggestions? outfits;
   final String date, today, storeKind;
   final Map<String, String> values, defaults, prev;
   final String? prevDate, weatherNote;
@@ -99,7 +100,67 @@ class DailyData {
         options: (j['options'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map(_s).toList())),
         closet: (j['closet'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList())),
         isLogged: j['isLogged'] == true, loggedDates: (j['loggedDates'] as List).map(_s).toList(), storeKind: _s(j['storeKind']),
+        outfits: j['outfits'] == null ? null : OutfitSuggestions.fromJson(j['outfits'] as Map<String, dynamic>),
       );
+}
+
+class OutfitPiece {
+  OutfitPiece(this.slot, this.id, this.label, this.values, this.why);
+  final String slot, id, label, why;
+  final Map<String, String> values;
+  factory OutfitPiece.fromJson(Map<String, dynamic> j) => OutfitPiece(_s(j['slot']), _s(j['id']), _s(j['label']), _strMap(j['values']), _s(j['why']));
+}
+
+class OutfitSuggestion {
+  OutfitSuggestion(this.title, this.tagline, this.pieces);
+  final String title, tagline;
+  final List<OutfitPiece> pieces;
+  factory OutfitSuggestion.fromJson(Map<String, dynamic> j) =>
+      OutfitSuggestion(_s(j['title']), _s(j['tagline']), (j['pieces'] as List).map((e) => OutfitPiece.fromJson(e as Map<String, dynamic>)).toList());
+
+  /// Form patch mirroring the server's outfitToPatch().
+  Map<String, String> toPatch() {
+    final patch = <String, String>{};
+    for (final p in pieces) {
+      patch.addAll(p.values);
+    }
+    final hat = pieces.any((p) => p.slot == 'hat'), jacket = pieces.any((p) => p.slot == 'jacket'), socks = pieces.any((p) => p.slot == 'socks');
+    if (!socks) {
+      for (final c in ['Sock ID', 'Sock Color Primary', 'Sock Color Secondary', 'Sock Company', 'Sock Design', 'Sock Color Short']) {
+        patch[c] = '';
+      }
+    }
+    patch['Hat?'] = hat ? 'TRUE' : 'FALSE';
+    patch['Jacket?'] = jacket ? 'TRUE' : 'FALSE';
+    patch['Clothes Layers'] = jacket ? '2' : '1';
+    if (!hat) {
+      for (final c in ['Hat ID', 'Hat Type', 'Hat Color Primary', 'Hat Color Secondary', 'Hat Company', 'Hat Design', 'Hat Color Short']) {
+        patch[c] = '';
+      }
+    }
+    if (!jacket) {
+      for (final c in ['Jacket ID', 'Jacket Type', 'Jacket Color Primary', 'Jacket Color Secondary', 'Jacket Company', 'Jacket Design', 'Jacket Color Short']) {
+        patch[c] = '';
+      }
+    }
+    return patch;
+  }
+}
+
+class OutfitSuggestions {
+  OutfitSuggestions({required this.feelsLike, required this.sky, required this.similarDays, required this.outfits, required this.shownKeys, required this.round, this.note, this.weekday = '', this.habits = const []});
+  final double? feelsLike;
+  final String sky, weekday;
+  final List<String> habits;
+  final int similarDays, round;
+  final List<OutfitSuggestion> outfits;
+  final List<String> shownKeys;
+  final String? note;
+  factory OutfitSuggestions.fromJson(Map<String, dynamic> j) => OutfitSuggestions(
+        feelsLike: _d(j['weather']?['feelsLike']), sky: _s(j['weather']?['sky']), similarDays: (j['similarDays'] as num? ?? 0).toInt(),
+        outfits: (j['outfits'] as List? ?? []).map((e) => OutfitSuggestion.fromJson(e as Map<String, dynamic>)).toList(),
+        shownKeys: (j['shownKeys'] as List? ?? []).map(_s).toList(), round: (j['round'] as num? ?? 0).toInt(), note: j['note'] as String?,
+        weekday: _s(j['weekday']), habits: (j['habits'] as List? ?? []).map(_s).toList());
 }
 
 class WeatherResult {

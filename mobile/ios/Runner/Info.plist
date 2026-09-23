@@ -16,6 +16,8 @@
 	<string>Diary connects to your diary server on the local network.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDisplayName</key>
 	<string>Diary</string>
 	<key>CFBundleExecutable</key>

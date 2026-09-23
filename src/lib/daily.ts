@@ -5,6 +5,7 @@ import { DAILY_AUTO_COLUMNS, DAILY_FIELDS } from "./schema/daily";
 import { CLOSET, type ClosetItem, type ClosetItems } from "./schema/closet";
 import type { ClosetKind } from "./schema/types";
 import { getDayWeather, weatherToColumns } from "./weather";
+import { suggestOutfits, type OutfitOptions, type OutfitSuggestions } from "./outfits";
 
 export interface DailyPageData {
   date: string;
@@ -26,6 +27,8 @@ export interface DailyPageData {
   storeKind: "sheets" | "csv";
   /** Where the prefilled weather came from (or why it couldn't be fetched). */
   weatherNote: string | null;
+  /** Weather-aware outfit ideas from your own history. */
+  outfits: OutfitSuggestions;
 }
 
 const LOGGED_IGNORE = new Set([...DAILY_AUTO_COLUMNS]);
@@ -115,11 +118,16 @@ export async function loadDaily(date: string): Promise<DailyPageData> {
     options[f.key] = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v);
   }
 
+  const closet = await loadCloset();
+  const eff = (k: string) => values[k] || defaults[k] || "";
+  const toNum = (v: string) => (v === "" || Number.isNaN(Number(v)) ? null : Number(v));
+  const outfits = suggestOutfits(date, { feelsLike: toNum(eff("Feels Like (F)")), high: toNum(eff("High Temperature (F)")), sky: eff("Sky") }, allLogged, closet);
+
   return {
     date, rowNumber, values, defaults, prev: prevRec,
     prevDate: before.length ? before[before.length - 1].date : null,
-    options, closet: await loadCloset(), isLogged: loggedToday,
-    loggedDates, storeKind: store.kind, weatherNote,
+    options, closet, isLogged: loggedToday,
+    loggedDates, storeKind: store.kind, weatherNote, outfits,
   };
 }
 
@@ -156,6 +164,15 @@ function autoColumns(date: string): Record<string, string> {
     Week: String(week),
     Month: dt.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" }),
   };
+}
+
+/** Recompute outfit ideas for a date with explicit weather (after the user edits/refreshes it). */
+export async function outfitsFor(date: string, weather: { feelsLike: number | null; high: number | null; sky: string }, opts: OutfitOptions = {}): Promise<OutfitSuggestions> {
+  const store = getStore();
+  const data = await store.read("journal", DAILY_SHEET);
+  const dateCol = data.header.indexOf("Date");
+  const logged = data.rows.filter((r) => r[dateCol] && isLoggedRow(data, r)).map((r) => rowToRecord(data, r));
+  return suggestOutfits(date, weather, logged, await loadCloset(), opts);
 }
 
 /** Persist changed cells for a date. Creates the date row if the sheet lacks one. */

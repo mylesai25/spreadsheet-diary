@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { saveDaily } from "@/lib/daily";
+import { outfitsFor, saveDaily } from "@/lib/daily";
+import type { OutfitSuggestions } from "@/lib/outfits";
 import { getDayWeather, weatherToColumns } from "@/lib/weather";
 
 export interface SaveResult { ok: boolean; error?: string; saved?: number }
@@ -26,6 +27,15 @@ export async function weatherAction(date: string, city: string, state: string, c
     const w = await getDayWeather(date, city, state, country, wakeTime || "08:00");
     if (!w) return { ok: false, error: `No weather found for ${city}` };
     return { ok: true, values: weatherToColumns(w), place: w.place };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** Outfit ideas for the weather currently on the form. */
+export async function outfitsAction(date: string, weather: { feelsLike: number | null; high: number | null; sky: string }, opts: { seen?: string[]; seed?: number } = {}): Promise<{ ok: boolean; data?: OutfitSuggestions; error?: string }> {
+  try {
+    return { ok: true, data: await outfitsFor(date, weather, opts) };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }

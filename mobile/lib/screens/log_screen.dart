@@ -21,6 +21,10 @@ class _LogScreenState extends State<LogScreen> {
   String? _error;
   bool _loading = true, _saving = false, _weatherBusy = false;
   String? _weatherNote;
+  OutfitSuggestions? _outfits;
+  bool _outfitsBusy = false;
+  List<String> _outfitSeen = [];
+  int _outfitRound = 0;
   final _scroll = ScrollController();
   final _sectionKeys = <String, GlobalKey>{};
 
@@ -39,7 +43,7 @@ class _LogScreenState extends State<LogScreen> {
       final v = Map<String, String>.from(d.values);
       if (!d.isLogged) d.defaults.forEach((k, def) { if ((v[k] ?? '').isEmpty) v[k] = def; });
       setState(() {
-        _data = d; _values = v; _saved = Map.of(d.values); _weatherNote = d.weatherNote; _loading = false;
+        _data = d; _values = v; _saved = Map.of(d.values); _weatherNote = d.weatherNote; _outfits = d.outfits; _outfitSeen = List.of(d.outfits?.shownKeys ?? const []); _outfitRound = 0; _loading = false;
         if (_date != d.date) _date = d.date;
       });
     } catch (e) {
@@ -93,10 +97,25 @@ class _LogScreenState extends State<LogScreen> {
       final w = await ApiScope.api(context).weather(
           date: _date, city: _values['Wake Up City'] ?? '', state: _values['Wake Up State'] ?? '', country: _values['Wake Up Country'] ?? '', wakeTime: _values['Wake Up Time'] ?? '');
       setState(() { _values.addAll(w.values); _weatherNote = 'Weather for ${w.place} from Open-Meteo'; });
+      _refreshOutfits(fresh: false);
     } catch (e) {
       setState(() => _weatherNote = e.toString());
     } finally {
       setState(() => _weatherBusy = false);
+    }
+  }
+
+  /// New ideas for the same weather: previously shown pieces are set aside and the ranking reshuffled.
+  Future<void> _refreshOutfits({bool fresh = true}) async {
+    setState(() => _outfitsBusy = true);
+    if (!fresh) { _outfitSeen = []; _outfitRound = 0; } else { _outfitRound += 1; }
+    try {
+      final o = await ApiScope.api(context).outfits(date: _date, feels: _values['Feels Like (F)'] ?? '', high: _values['High Temperature (F)'] ?? '', sky: _values['Sky'] ?? '', seen: _outfitSeen, seed: _outfitRound);
+      setState(() { _outfits = o; _outfitSeen = {..._outfitSeen, ...o.shownKeys}.toList(); if (_outfitSeen.length > 60) _outfitSeen = _outfitSeen.sublist(_outfitSeen.length - 60); });
+    } catch (e) {
+      _toast('Outfit ideas failed: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _outfitsBusy = false);
     }
   }
 
@@ -249,6 +268,7 @@ class _LogScreenState extends State<LogScreen> {
                     ),
                 ],
               ),
+              if (s.id == 'outfit' && _outfits != null) _OutfitIdeas(data: _outfits!, busy: _outfitsBusy, onRefresh: _refreshOutfits, onWear: (patch) { _patch(patch); _toast('Outfit applied — review and save'); }),
               if (s.id == 'day' && _weatherNote != null)
                 Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(_weatherNote!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
               for (final item in s.items)
@@ -312,4 +332,88 @@ class _ErrorView extends StatelessWidget {
           ),
         ),
       );
+}
+
+const _slotIcon = {'shirt': '👕', 'pants': '👖', 'shoes': '👟', 'socks': '🧦', 'hat': '🧢', 'jacket': '🧥'};
+
+class _OutfitIdeas extends StatelessWidget {
+  const _OutfitIdeas({required this.data, required this.busy, required this.onRefresh, required this.onWear});
+  final OutfitSuggestions data;
+  final bool busy;
+  final VoidCallback onRefresh;
+  final ValueChanged<Map<String, String>> onWear;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final desc = data.feelsLike == null ? 'no weather yet' : 'feels like ${data.feelsLike!.round()}°${data.sky.isNotEmpty ? ' · ${data.sky}' : ''}';
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 4),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(12), border: Border.all(color: cs.primary.withValues(alpha: 0.3))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            const Text('✨ ', style: TextStyle(fontSize: 14)),
+            Text('Outfit ideas', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            Expanded(child: Text('$desc${data.similarDays > 0 ? ' · ${data.similarDays} similar days' : ''}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
+            TextButton.icon(icon: busy ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh, size: 16), label: const Text('New ideas'), onPressed: busy ? null : onRefresh, style: TextButton.styleFrom(visualDensity: VisualDensity.compact)),
+          ]),
+          if (data.note != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(data.note!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.tertiary))),
+          if (data.habits.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('📅 ${data.weekday} habit: ${data.habits.join(' · ')}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
+          if (data.round > 0) Padding(padding: const EdgeInsets.only(top: 2), child: Text('Round ${data.round + 1} — earlier picks set aside', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
+          if (data.outfits.isEmpty)
+            Padding(padding: const EdgeInsets.only(top: 6), child: Text('No suggestions yet.', style: Theme.of(context).textTheme.bodySmall))
+          else
+            SizedBox(
+              height: 232,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(top: 8),
+                itemCount: data.outfits.length,
+                separatorBuilder: (_, i) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final o = data.outfits[i];
+                  return Container(
+                    width: 260,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: cs.outlineVariant)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(o.title, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(o.tagline, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                        const SizedBox(height: 6),
+                        Expanded(
+                          child: ListView(
+                            padding: EdgeInsets.zero,
+                            children: [
+                              for (final p in o.pieces)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 3),
+                                  child: Tooltip(
+                                    message: p.why,
+                                    child: RichText(text: TextSpan(style: Theme.of(context).textTheme.bodySmall, children: [
+                                      TextSpan(text: '${_slotIcon[p.slot] ?? ''} '),
+                                      TextSpan(text: '#${p.id} ', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600)),
+                                      TextSpan(text: p.label),
+                                    ])),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Align(alignment: Alignment.centerLeft, child: FilledButton.tonal(onPressed: () => onWear(o.toPatch()), style: FilledButton.styleFrom(visualDensity: VisualDensity.compact), child: const Text('Wear this'))),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

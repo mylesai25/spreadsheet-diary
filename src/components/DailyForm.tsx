@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import type { DailyPageData } from "@/lib/daily";
 import { DAILY_SECTIONS } from "@/lib/schema/daily";
 import { isGroup, type Field } from "@/lib/schema/types";
-import { saveDailyAction, weatherAction } from "@/app/log/actions";
+import { outfitsAction, saveDailyAction, weatherAction } from "@/app/log/actions";
+import { OutfitSuggestionsPanel } from "./OutfitSuggestions";
+import type { OutfitSuggestions } from "@/lib/outfits";
 import { FieldRow, Toggle, Rating, NumberField, TimeField, TextField, TextArea } from "./form/Fields";
 import { SelectInput, MultiInput, ItemPicker } from "./form/Combobox";
 
@@ -32,12 +34,30 @@ export function DailyForm({ data }: { data: DailyPageData }) {
   const [activeSection, setActiveSection] = useState(DAILY_SECTIONS[0].id);
   const [weatherNote, setWeatherNote] = useState<string | null>(data.weatherNote);
   const [weatherBusy, setWeatherBusy] = useState(false);
+  const [outfits, setOutfits] = useState<OutfitSuggestions>(data.outfits);
+  const [outfitsBusy, setOutfitsBusy] = useState(false);
+
+  const seenRef = useRef<string[]>(data.outfits.shownKeys ?? []);
+  const roundRef = useRef(0);
+
+  /** New ideas: same weather, but pieces already shown are pushed down and the ranking is reshuffled. */
+  const refreshOutfits = async (v: Values = values, { fresh = true }: { fresh?: boolean } = {}) => {
+    setOutfitsBusy(true);
+    const n = (x: string) => (x === "" || Number.isNaN(Number(x)) ? null : Number(x));
+    if (!fresh) { seenRef.current = []; roundRef.current = 0; } else roundRef.current += 1;
+    const res = await outfitsAction(data.date, { feelsLike: n(v["Feels Like (F)"] ?? ""), high: n(v["High Temperature (F)"] ?? ""), sky: v["Sky"] ?? "" }, { seen: seenRef.current, seed: roundRef.current });
+    setOutfitsBusy(false);
+    if (res.ok && res.data) {
+      setOutfits(res.data);
+      seenRef.current = [...new Set([...seenRef.current, ...res.data.shownKeys])].slice(-60);
+    }
+  };
 
   const getWeather = async () => {
     setWeatherBusy(true);
     const res = await weatherAction(data.date, values["Wake Up City"] ?? "", values["Wake Up State"] ?? "", values["Wake Up Country"] ?? "", values["Wake Up Time"] ?? "");
     setWeatherBusy(false);
-    if (res.ok && res.values) { setMany(res.values); setWeatherNote(`Weather for ${res.place} from Open-Meteo`); }
+    if (res.ok && res.values) { setMany(res.values); setWeatherNote(`Weather for ${res.place} from Open-Meteo`); refreshOutfits({ ...values, ...res.values }, { fresh: false }); }
     else setWeatherNote(res.error ?? "Weather unavailable");
   };
 
@@ -175,6 +195,7 @@ export function DailyForm({ data }: { data: DailyPageData }) {
                 )}
               </header>
               {s.id === "day" && weatherNote && <p className="-mt-1 mb-3 text-xs text-muted">{weatherNote} · Feels like = apparent temp at wake-up time</p>}
+              {s.id === "outfit" && <OutfitSuggestionsPanel data={outfits} busy={outfitsBusy} onRefresh={() => refreshOutfits()} onWear={setMany} />}
               <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
                 {s.items.map((item, idx) =>
                   isGroup(item) ? (

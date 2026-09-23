@@ -29,7 +29,7 @@ lib/widgets/fields.dart       field renderers (toggle, rating, time, autocomplet
    Settings-tab values:
    - simulator / Chrome: `http://localhost:3000`
    - real iPhone on the same Wi‑Fi: `http://Myless-MacBook-Pro.local:3000` (or `http://192.168.1.152:3000`)
-   - deployed: your Vercel URL + the `APP_PASSWORD`
+   - deployed: `https://spreadsheet-diary.vercel.app` + the `APP_PASSWORD` (TestFlight builds default to this URL)
 
 Plain-http local traffic is allowed in `ios/Runner/Info.plist` (ATS) and the Android manifest for development;
 tighten those before shipping anything public.
@@ -41,6 +41,13 @@ flutter build ios --simulator --debug --dart-define=DIARY_URL=http://localhost:3
 xcrun simctl boot "iPhone 16" && open -a Simulator
 xcrun simctl install booted build/ios/iphonesimulator/Runner.app && xcrun simctl launch booted com.mylesai.diary
 ```
+
+## TestFlight
+
+```bash
+APPLE_ID=you@example.com DIARY_ALTOOL_PW=xxxx-xxxx-xxxx-xxxx ./scripts/release_ios.sh   # signed archive → upload → appears in TestFlight in ~10 min
+```
+See the script header for the one-time setup (Xcode account, App Store Connect app record, app-specific password).
 
 ## Checks
 
