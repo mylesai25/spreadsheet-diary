@@ -55,3 +55,12 @@ See the script header for the one-time setup (Xcode account, App Store Connect a
 flutter analyze
 flutter test
 ```
+
+## Reminders
+
+Settings › Reminders turns on a daily local notification ("Today isn't logged yet") at a time you pick
+(default 9:00 PM). Implementation (`lib/reminders.dart`): one notification is scheduled per day for the
+next 30 days; every `/api/daily` load or save carries the full list of logged dates, and the app cancels
+the reminders for those days. So the nudge only fires on a day you haven't filled in — provided the phone
+app has seen the diary since you logged it (logging from the web without opening the app won't cancel it).
+Uses `flutter_local_notifications` + `timezone` + `flutter_timezone`; no server involvement.

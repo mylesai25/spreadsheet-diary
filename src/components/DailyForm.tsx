@@ -7,6 +7,7 @@ import { isGroup, type Field } from "@/lib/schema/types";
 import { outfitsAction, saveDailyAction, weatherAction } from "@/app/log/actions";
 import { OutfitSuggestionsPanel } from "./OutfitSuggestions";
 import type { OutfitSuggestions } from "@/lib/outfits";
+import type { ClosetItems } from "@/lib/schema/closet";
 import { FieldRow, Toggle, Rating, NumberField, TimeField, TextField, TextArea } from "./form/Fields";
 import { SelectInput, MultiInput, ItemPicker } from "./form/Combobox";
 
@@ -36,6 +37,16 @@ export function DailyForm({ data }: { data: DailyPageData }) {
   const [weatherBusy, setWeatherBusy] = useState(false);
   const [outfits, setOutfits] = useState<OutfitSuggestions>(data.outfits);
   const [outfitsBusy, setOutfitsBusy] = useState(false);
+  const [closet, setCloset] = useState<ClosetItems | null>(data.closet);
+
+  // The page ships without the ~100 KB closet; fetch it here (the browser caches /api/closet for 10 minutes).
+  useEffect(() => {
+    if (closet) return;
+    let cancelled = false;
+    fetch("/api/closet").then((r) => (r.ok ? r.json() : null)).then((j) => { if (!cancelled && j?.closet) setCloset(j.closet as ClosetItems); }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const seenRef = useRef<string[]>(data.outfits.shownKeys ?? []);
   const roundRef = useRef(0);
@@ -105,6 +116,14 @@ export function DailyForm({ data }: { data: DailyPageData }) {
     });
   };
 
+  // The server renders instant history-based picks; when Claude is configured, ask it for its ideas right away.
+  useEffect(() => {
+    if (!data.outfits.claudeAvailable || data.outfits.engine === "claude" || !data.outfits.outfits.length) return;
+    const t = setTimeout(() => refreshOutfits(values, { fresh: false }), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.date]);
+
   // Cmd/Ctrl+S saves.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); save(); } };
@@ -148,10 +167,10 @@ export function DailyForm({ data }: { data: DailyPageData }) {
       case "select": return <FieldRow key={f.key} label={labelEl}><SelectInput value={v} options={data.options[f.key] ?? []} onChange={(x) => set(f.key, x)} /></FieldRow>;
       case "multi": return <FieldRow key={f.key} label={labelEl} wide><MultiInput value={v} options={data.options[f.key] ?? []} onChange={(x) => set(f.key, x)} /></FieldRow>;
       case "closet": {
-        const items = data.closet[f.closet!] ?? [];
+        const items = closet?.[f.closet!] ?? [];
         return (
           <FieldRow key={f.key} label={labelEl} wide>
-            <ItemPicker value={v} items={items}
+            <ItemPicker value={v} items={items} loading={!closet}
               onPick={(it) => { const full = items.find((i) => i.id === it.id); setMany({ [f.key]: it.id, ...(full?.values ?? {}) }); }}
               onClear={() => { const full = items.find((i) => i.id === v); const blank: Values = { [f.key]: "" }; for (const k of Object.keys(full?.values ?? {})) blank[k] = ""; setMany(blank); }} />
           </FieldRow>

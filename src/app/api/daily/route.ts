@@ -7,11 +7,12 @@ import { error, handler, json, options } from "@/lib/api";
 export const dynamic = "force-dynamic";
 export const OPTIONS = options;
 
-/** GET /api/daily?date=YYYY-MM-DD → the row, defaults, suggestion lists, closet items. */
+/** GET /api/daily?date=YYYY-MM-DD[&closet=0] → the row, defaults, suggestion lists, and (unless closet=0) closet items.
+ *  Clients that cache /api/closet pass closet=0 to skip the ~100 KB of pickers. */
 export const GET = handler(async (req: NextRequest) => {
   const q = req.nextUrl.searchParams.get("date");
   const date = q && isValidISODate(q) ? q : todayISO();
-  const data = await loadDaily(date);
+  const data = await loadDaily(date, { closet: req.nextUrl.searchParams.get("closet") !== "0" });
   return json({ ok: true, today: todayISO(), ...data });
 });
 

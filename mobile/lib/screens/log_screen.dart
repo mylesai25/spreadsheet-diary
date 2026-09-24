@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../api/client.dart';
 import '../main.dart';
 import '../models/models.dart';
+import '../reminders.dart';
 import '../widgets/fields.dart';
 
 /// Daily Overview entry: the same sectioned form as the web app, driven by /api/schema.
@@ -16,6 +18,7 @@ class _LogScreenState extends State<LogScreen> {
   String _date = DateTime.now().toIso8601String().substring(0, 10);
   List<Section>? _sections;
   DailyData? _data;
+  Map<String, List<ClosetItem>> _closet = {};
   Map<String, String> _values = {};
   Map<String, String> _saved = {};
   String? _error;
@@ -38,14 +41,25 @@ class _LogScreenState extends State<LogScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final api = ApiScope.api(context);
-      _sections ??= await api.schema();
-      final d = await api.daily(_date);
+      // Schema, the day, and the (cached) closet in parallel — one round trip instead of three.
+      final results = await Future.wait<Object>([
+        _sections == null ? api.schema() : Future.value(_sections!),
+        api.daily(_date),
+        ClosetCache.get(api),
+      ]);
+      _sections = results[0] as List<Section>;
+      final d = results[1] as DailyData;
+      _closet = results[2] as Map<String, List<ClosetItem>>;
       final v = Map<String, String>.from(d.values);
       if (!d.isLogged) d.defaults.forEach((k, def) { if ((v[k] ?? '').isEmpty) v[k] = def; });
       setState(() {
         _data = d; _values = v; _saved = Map.of(d.values); _weatherNote = d.weatherNote; _outfits = d.outfits; _outfitSeen = List.of(d.outfits?.shownKeys ?? const []); _outfitRound = 0; _loading = false;
         if (_date != d.date) _date = d.date;
       });
+      Reminders.sync(d.loggedDates);   // drop the reminder for days already logged
+      // Instant picks are up; when Claude is configured, ask it for its ideas now.
+      final o = d.outfits;
+      if (o != null && o.claudeAvailable && o.engine != 'claude' && o.outfits.isNotEmpty) _refreshOutfits(fresh: false);
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
     }
@@ -85,6 +99,7 @@ class _LogScreenState extends State<LogScreen> {
       final n = await ApiScope.api(context).saveDaily(_date, changes);
       setState(() { _saved.addAll(changes); _saving = false; });
       _toast('Saved $n field${n == 1 ? '' : 's'}');
+      Reminders.sync({...?_data?.loggedDates, _date});   // this day counts as logged now
     } catch (e) {
       setState(() => _saving = false);
       _toast('Save failed: $e', error: true);
@@ -300,7 +315,7 @@ class _LogScreenState extends State<LogScreen> {
           field: f,
           value: _values[f.key] ?? '',
           options: _data!.options[f.key] ?? const [],
-          closet: f.closet == null ? const [] : (_data!.closet[f.closet!] ?? const []),
+          closet: f.closet == null ? const [] : (_closet[f.closet!] ?? const []),
           changed: (_saved[f.key] ?? '') != (_values[f.key] ?? ''),
           onChanged: (v) => _set(f.key, v),
           onPatch: _patch,
@@ -359,11 +374,12 @@ class _OutfitIdeas extends StatelessWidget {
             Text('Outfit ideas', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(width: 8),
             Expanded(child: Text('$desc${data.similarDays > 0 ? ' · ${data.similarDays} similar days' : ''}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
-            TextButton.icon(icon: busy ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh, size: 16), label: const Text('New ideas'), onPressed: busy ? null : onRefresh, style: TextButton.styleFrom(visualDensity: VisualDensity.compact)),
+            TextButton.icon(icon: busy ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh, size: 16), label: Text(busy && data.claudeAvailable ? 'Asking Claude…' : 'New ideas'), onPressed: busy ? null : onRefresh, style: TextButton.styleFrom(visualDensity: VisualDensity.compact)),
           ]),
           if (data.note != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(data.note!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.tertiary))),
           if (data.habits.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('📅 ${data.weekday} habit: ${data.habits.join(' · ')}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
           if (data.round > 0) Padding(padding: const EdgeInsets.only(top: 2), child: Text('Round ${data.round + 1} — earlier picks set aside', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
+          if (data.engine == 'claude') Padding(padding: const EdgeInsets.only(top: 2), child: Text('Composed by Claude from your closet and this year’s diary', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
           if (data.outfits.isEmpty)
             Padding(padding: const EdgeInsets.only(top: 6), child: Text('No suggestions yet.', style: Theme.of(context).textTheme.bodySmall))
           else
@@ -399,6 +415,7 @@ class _OutfitIdeas extends StatelessWidget {
                                       TextSpan(text: '${_slotIcon[p.slot] ?? ''} '),
                                       TextSpan(text: '#${p.id} ', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600)),
                                       TextSpan(text: p.label),
+                                      if (p.isNew) TextSpan(text: '  NEW', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w700, fontSize: 10)),
                                     ])),
                                   ),
                                 ),

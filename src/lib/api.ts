@@ -3,7 +3,7 @@ import { AUTH_COOKIE, authEnabled, expectedToken } from "./auth";
 
 /** Helpers for the JSON API used by the Flutter client. */
 
-const CORS = {
+export const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",

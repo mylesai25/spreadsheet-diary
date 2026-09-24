@@ -20,7 +20,7 @@ export function OutfitSuggestionsPanel({ data, busy, onRefresh, onWear }: { data
           <span className="truncate text-xs text-ink-2">{desc}{data.similarDays ? ` · from ${data.similarDays} similar days` : ""}</span>
           <span className="ml-auto text-xs text-muted">{open ? "hide" : "show"}</span>
         </button>
-        <button type="button" className="btn-ghost !py-1 text-xs" onClick={onRefresh} disabled={busy} title="Different outfits for the same weather (uses the weather currently on the form)">{busy ? "…" : "↻ New ideas"}</button>
+        <button type="button" className="btn-ghost !py-1 text-xs" onClick={onRefresh} disabled={busy} title="Different outfits for the same weather (uses the weather currently on the form)">{busy ? (data.claudeAvailable ? "Asking Claude…" : "…") : "↻ New ideas"}</button>
       </div>
       {open && (
         <div className="mt-3">
@@ -30,7 +30,7 @@ export function OutfitSuggestionsPanel({ data, busy, onRefresh, onWear }: { data
             <p className="text-sm text-ink-2">No suggestions yet.</p>
           ) : (
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-              {data.outfits.map((o) => <OutfitCard key={o.title} o={o} onWear={() => onWear(outfitToPatch(o))} />)}
+              {data.outfits.map((o, i) => <OutfitCard key={`${i}-${o.title}`} o={o} onWear={() => onWear(outfitToPatch(o))} />)}
             </div>
           )}
           {data.examples.length > 0 && (
@@ -45,7 +45,7 @@ export function OutfitSuggestionsPanel({ data, busy, onRefresh, onWear }: { data
           )}
           <p className="mt-2 text-[11px] text-muted">
             {`Jacket on ${Math.round(data.jacketShare * 100)}% and hat on ${Math.round(data.hatShare * 100)}% of days like this — layers are only suggested when you usually wear them; socks follow the shoes. `}
-            Ranked by what you wear in this weather, favoring pieces you haven&apos;t worn lately.{data.round ? ` Round ${data.round + 1} — earlier picks set aside.` : ""}
+            {data.engine === "claude" ? "Composed by Claude from your closet and this year’s diary." : "Ranked by what you wear in this weather, favoring pieces you haven’t worn lately."}{data.round ? ` Round ${data.round + 1} — earlier picks set aside.` : ""}
           </p>
         </div>
       )}
@@ -63,6 +63,7 @@ function OutfitCard({ o, onWear }: { o: OutfitSuggestion; onWear: () => void }) 
           <li key={p.slot} className="text-sm" title={p.why}>
             <span aria-hidden className="mr-1">{SLOT_ICON[p.slot]}</span>
             <span className="font-mono text-xs text-accent">#{p.id}</span> {p.label}
+            {p.isNew && <span className="ml-1 rounded bg-accent/15 px-1 text-[10px] font-semibold uppercase text-accent">new</span>}
             <div className="pl-6 text-[11px] text-muted">{p.why}</div>
           </li>
         ))}

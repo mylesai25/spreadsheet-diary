@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api/client.dart';
+import 'reminders.dart';
 import 'screens/activities_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/log_screen.dart';
@@ -9,6 +10,7 @@ import 'screens/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = await AppSettings.load();
+  await Reminders.init();
   runApp(DiaryApp(settings: settings));
 }
 

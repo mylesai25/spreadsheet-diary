@@ -1,4 +1,4 @@
-import type { ClosetItems } from "./schema/closet";
+import type { ClosetItem, ClosetItems } from "./schema/closet";
 import type { ClosetKind } from "./schema/types";
 import { isoToSerial } from "./dates";
 
@@ -14,6 +14,8 @@ export interface OutfitPiece {
   values: Record<string, string>;
   /** Short reason, e.g. "worn 6× on days like this · last worn 38 days ago". */
   why: string;
+  /** Never worn this year — e.g. just added to the Virtual Closet. */
+  isNew: boolean;
 }
 
 export interface OutfitSuggestion { title: string; tagline: string; pieces: OutfitPiece[] }
@@ -25,7 +27,11 @@ export interface OutfitOptions {
   seen?: string[];
   /** Round number; drives a deterministic shuffle. 0 = plain ranking. */
   seed?: number;
+  /** Include the per-slot ranked candidate lists (used to brief Claude). */
+  candidates?: boolean;
 }
+
+export interface OutfitCandidate { id: string; why: string; isNew: boolean }
 
 export interface OutfitSuggestions {
   weather: OutfitWeather;
@@ -42,6 +48,13 @@ export interface OutfitSuggestions {
   outfits: OutfitSuggestion[];
   examples: SimilarDay[];
   note: string | null;
+  /** Who assembled the outfits: Claude, or the history engine (instant picks / fallback). */
+  engine: "claude" | "history";
+  /** True when Claude is configured — clients fetch Claude's ideas after the instant picks render. */
+  claudeAvailable: boolean;
+  model?: string;
+  /** Per-slot ranked candidates (only with opts.candidates). */
+  candidates?: Partial<Record<ClosetKind, OutfitCandidate[]>>;
 }
 
 type Rec = Record<string, string>;
@@ -122,7 +135,7 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
   const doy = dayOfYear(date);
 
   if (!history.length || feels == null) {
-    return { weather, weekday, habits, shownKeys: [], round: seed, similarDays: 0, jacketShare: 0, hatShare: 0, outfits: [], examples: [], note: feels == null ? "Fill in the weather (or tap Get weather) to get outfit ideas." : "Not enough outfit history yet." };
+    return { weather, weekday, habits, shownKeys: [], round: seed, similarDays: 0, jacketShare: 0, hatShare: 0, outfits: [], examples: [], engine: "history", claudeAvailable: false, note: feels == null ? "Fill in the weather (or tap Get weather) to get outfit ideas." : "Not enough outfit history yet." };
   }
 
   // Similar days: tighten the temperature band until we have a reasonable sample.
@@ -160,7 +173,7 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
   for (const r of history) for (const s of SLOTS) { const id = r[s.idCol]; if (id) { const k = `${s.kind}:${id}`; const d = isoToSerial(r.Date); if ((lastWorn.get(k) ?? -1) < d) lastWorn.set(k, d); } }
 
   // Score candidates per slot.
-  type Cand = { piece: OutfitPiece; score: number; timesSimilar: number; daysSince: number | null };
+  type Cand = { piece: OutfitPiece; score: number; timesSimilar: number; daysSince: number | null; fit: number };
   const perSlot = new Map<ClosetKind, Cand[]>();
   for (const s of SLOTS) {
     const scores = new Map<string, { w: number; n: number; sample: Rec }>();
@@ -171,15 +184,35 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
       const e = scores.get(id) ?? { w: 0, n: 0, sample: r };
       e.w += w; e.n += 1; scores.set(id, e);
     }
-    // Closet items never worn on similar days still get a small exploration score when the slot is thin —
-    // or when they match a strong weekday color habit (so "blue shirts on Tuesdays" has enough blue shirts to pick from).
+    // Which types (hoodie, shorts, sandals…) you actually wear on days like this — judges pieces with no history of their own.
+    const typeCol = s.cols[0].endsWith(" Type") ? s.cols[0] : null;
+    const typeW = new Map<string, number>();
+    let typeTotal = 0;
+    if (typeCol) for (const { r, w } of similar) {
+      if (s.gate && r[s.gate] !== "TRUE") continue;
+      const t = (r[typeCol] ?? "").trim();
+      if (t) { typeW.set(t, (typeW.get(t) ?? 0) + w); typeTotal += w; }
+    }
+    const typeFit = (it: ClosetItem): number => {
+      if (!typeCol || !typeTotal) return 1;
+      const t = (it.values[typeCol] ?? "").trim();
+      if (!t) return 0.5;
+      const share = (typeW.get(t) ?? 0) / typeTotal;
+      return share > 0 ? Math.min(1, 0.5 + share) : 0.1;          // a type you never wear in this weather (swim trunks in October)
+    };
+
+    // Closet items never worn on similar days still get a small exploration score when the slot is thin,
+    // when they match a strong weekday color habit (so "blue shirts on Tuesdays" has enough blue shirts to pick from),
+    // or when they've never been worn at all this year (new additions to the closet) — scaled by how well their type fits.
     const closetItems = closet[s.kind] ?? [];
     const habitTop = colorLift.get(s.kind)?.top;
     const habitColor = habitTop && habitTop.share >= 0.6 && habitTop.lift >= 1.25 ? habitTop.color : null;
+    const thin = scores.size < 6;
     for (const it of closetItems) {
       if (scores.has(it.id)) continue;
       const matchesHabit = habitColor != null && (it.values[s.colorCol] ?? "").trim() === habitColor;
-      if (scores.size < 6 || matchesHabit) scores.set(it.id, { w: matchesHabit ? 0.3 : 0.15, n: 0, sample: {} });
+      const neverWorn = !lastWorn.has(`${s.kind}:${it.id}`);
+      if (thin || matchesHabit || neverWorn) scores.set(it.id, { w: (matchesHabit ? 0.3 : 0.15) * (neverWorn ? typeFit(it) : 1), n: 0, sample: {} });
     }
 
     const cands: Cand[] = [];
@@ -190,7 +223,10 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
       const values: Record<string, string> = item ? { ...item.values } : Object.fromEntries(s.cols.map((c) => [c, e.sample[c] ?? ""]));
       values[s.idCol] = id;
       const label = item?.label ?? s.cols.slice(0, 2).map((c) => e.sample[c]).filter(Boolean).join(" ") ?? `#${id}`;
-      const whyParts = [e.n ? `worn ${e.n}× on days like this` : "not tried in this weather yet", daysSince == null ? "not worn this year" : daysSince === 0 ? "worn today" : `last worn ${daysSince}d ago`];
+      let fit = daysSince == null && item ? typeFit(item) : 1;
+      const whyParts = daysSince == null
+        ? ["not worn yet this year", typeCol && typeTotal ? (fit >= 0.5 ? "you wear this type on days like this" : "unusual type for this weather") : ""]
+        : [e.n ? `worn ${e.n}× on days like this` : "not tried in this weather yet", daysSince === 0 ? "worn today" : `last worn ${daysSince}d ago`];
       const key = `${s.kind}:${id}`;
       let score = e.w * freshness(daysSince);
       const color = (values[s.colorCol] ?? "").trim();
@@ -198,11 +234,11 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
       if (lift != null) {
         score *= Math.min(3, Math.max(0.15, lift));                  // weekday color habit (e.g. blue shirts on Tuesdays)
         if (lift >= 1.25) whyParts.push(`your ${weekday} color`);
-        else if (lift <= 0.4) whyParts.push(`rare for a ${weekday}`);
+        else if (lift <= 0.4) { whyParts.push(`rare for a ${weekday}`); fit = Math.min(fit, 0.4); }   // keeps it out of "Something new" today
       }
       if (seen.has(key)) score *= 0.2;                              // already suggested this session
       if (seed) score *= 0.7 + 0.6 * jitter(seed, key);            // reshuffle among the plausible picks
-      cands.push({ piece: { slot: s.kind, id, label, values, why: whyParts.join(" · ") }, score, timesSimilar: e.n, daysSince });
+      cands.push({ piece: { slot: s.kind, id, label, values, why: whyParts.filter(Boolean).join(" · "), isNew: daysSince == null }, score, timesSimilar: e.n, daysSince, fit });
     }
     cands.sort((a, b) => b.score - a.score);
     perSlot.set(s.kind, cands);
@@ -236,11 +272,16 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
     return pieces.some((p) => p.slot === "shirt") && pieces.some((p) => p.slot === "pants") ? { title, tagline, pieces } : null;
   };
 
+  const fresh = (c: Cand) => c.score * (c.daysSince == null ? 1.4 : c.daysSince >= 45 ? 1.3 : c.daysSince >= 21 ? 1 : 0.4);
+  // Never-worn pieces whose type suits this weather, newest (highest id) first; slots without one fall back to fresh picks.
+  const brandNew = (c: Cand) => (c.daysSince == null && c.fit >= 0.5 && !seen.has(`${c.piece.slot}:${c.piece.id}`) ? 1e6 + (Number(c.piece.id) || 0) + c.score : fresh(c));
   const outfits = [
     build("Most you", `What you reach for when it feels like ${Math.round(feels)}°${wet ? " and wet" : ""}`, 0),
     build("Solid alternate", "Next-best picks from the same kind of days", 0),
-    build("Fresh rotation", "Weather-appropriate pieces you haven't worn in a while", 0, (c) => c.score * (c.daysSince == null ? 1.4 : c.daysSince >= 45 ? 1.3 : c.daysSince >= 21 ? 1 : 0.4)),
+    build("Fresh rotation", "Weather-appropriate pieces you haven't worn in a while", 0, fresh),
   ].filter((o): o is OutfitSuggestion => o != null);
+  const somethingNew = build("Something new", "Closet pieces you haven't worn yet that suit this weather", 0, brandNew);
+  if (somethingNew?.pieces.some((p) => p.isNew)) outfits.push(somethingNew);
 
   const examples: SimilarDay[] = [...similar].sort((a, b) => b.w - a.w).slice(0, 4).map(({ r }) => ({
     date: r.Date, feelsLike: num(r["Feels Like (F)"]), sky: r.Sky,
@@ -249,10 +290,13 @@ export function suggestOutfits(date: string, weather: OutfitWeather, rows: Rec[]
 
   const shownKeys = outfits.flatMap((o) => o.pieces.map((p) => `${p.slot}:${p.id}`));
 
-  return {
+  const result: OutfitSuggestions = {
     weather: { ...weather, feelsLike: feels }, weekday, habits, shownKeys, round: seed, similarDays: similar.length, jacketShare, hatShare, outfits, examples,
+    engine: "history", claudeAvailable: false,
     note: similar.length < 8 ? `Only ${similar.length} past days felt like this — take these with a grain of salt.` : null,
   };
+  if (opts.candidates) result.candidates = Object.fromEntries([...perSlot].map(([k, list]) => [k, list.slice(0, 10).map((c) => ({ id: c.piece.id, why: c.piece.why, isNew: c.piece.isNew }))]));
+  return result;
 }
 
 /** Form patch for "Wear this": item values + the Hat?/Jacket? flags + layers. */

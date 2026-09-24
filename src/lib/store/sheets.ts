@@ -4,8 +4,11 @@ import { COLUMN_KINDS } from "./columnKinds";
 import type { Book, SheetData, Store } from "./types";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
-const CACHE_TTL_MS = 60_000;
+const CACHE_TTL_MS = 60_000;                       // current-year journal: edits land through the app, so keep this short
+const CLOSET_TTL_MS = 5 * 60 * 1000;               // closet: edited by hand in Sheets, rarely
 const PRIOR_YEAR_TTL_MS = 24 * 60 * 60 * 1000;
+
+const EMPTY_VALUES = "UNFORMATTED_VALUE" as const;
 
 /** Prior-year journals (override with SHEET_ID_<year>). */
 export const PRIOR_YEAR_SHEET_IDS: Record<string, string> = {
@@ -40,18 +43,50 @@ export class SheetsStore implements Store {
     return id;
   }
 
-  async read(book: Book, sheet: string): Promise<SheetData> {
-    const key = `${book}:${sheet}`;
-    const hit = this.cache.get(key);
-    if (hit && Date.now() - hit.at < (book.startsWith("journal-") ? PRIOR_YEAR_TTL_MS : CACHE_TTL_MS)) return hit.data;
+  private ttl(book: Book) {
+    return book.startsWith("journal-") ? PRIOR_YEAR_TTL_MS : book === "closet" ? CLOSET_TTL_MS : CACHE_TTL_MS;
+  }
 
+  private cached(book: Book, sheet: string): SheetData | null {
+    const hit = this.cache.get(`${book}:${sheet}`);
+    return hit && Date.now() - hit.at < this.ttl(book) ? hit.data : null;
+  }
+
+  async read(book: Book, sheet: string): Promise<SheetData> {
+    const hit = this.cached(book, sheet);
+    if (hit) return hit;
     const res = await this.api.spreadsheets.values.get({
       spreadsheetId: this.id(book),
       range: `'${sheet}'`,
-      valueRenderOption: "UNFORMATTED_VALUE",
+      valueRenderOption: EMPTY_VALUES,
       dateTimeRenderOption: "SERIAL_NUMBER",
     });
-    const values = (res.data.values ?? []) as unknown[][];
+    return this.remember(book, sheet, (res.data.values ?? []) as unknown[][]);
+  }
+
+  /** One batchGet for every sheet not already cached; falls back to per-sheet reads if the batch fails (e.g. a missing tab). */
+  async readMany(book: Book, sheets: string[]): Promise<SheetData[]> {
+    const out = new Map<string, SheetData>();
+    const missing = sheets.filter((s) => { const hit = this.cached(book, s); if (hit) out.set(s, hit); return !hit; });
+    if (missing.length) {
+      try {
+        const res = await this.api.spreadsheets.values.batchGet({
+          spreadsheetId: this.id(book),
+          ranges: missing.map((s) => `'${s}'`),
+          valueRenderOption: EMPTY_VALUES,
+          dateTimeRenderOption: "SERIAL_NUMBER",
+        });
+        const ranges = res.data.valueRanges ?? [];
+        missing.forEach((s, i) => out.set(s, this.remember(book, s, (ranges[i]?.values ?? []) as unknown[][])));
+      } catch {
+        const singles = await Promise.all(missing.map((s) => this.read(book, s).catch((): SheetData => ({ book, name: s, header: [], rows: [] }))));
+        missing.forEach((s, i) => out.set(s, singles[i]));
+      }
+    }
+    return sheets.map((s) => out.get(s)!);
+  }
+
+  private remember(book: Book, sheet: string, values: unknown[][]): SheetData {
     const header = (values[0] ?? []).map((h) => String(h ?? "").trim());
     const kinds = COLUMN_KINDS[sheet] ?? {};
     const rows = values.slice(1).map((r) =>
@@ -67,7 +102,7 @@ export class SheetsStore implements Store {
     // Drop fully blank trailing rows but keep interior ones (row numbers must stay stable).
     while (rows.length && rows[rows.length - 1].every((c) => c === "")) rows.pop();
     const data = { book, name: sheet, header, rows };
-    this.cache.set(key, { at: Date.now(), data });
+    this.cache.set(`${book}:${sheet}`, { at: Date.now(), data });
     return data;
   }
 

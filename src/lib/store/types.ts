@@ -12,6 +12,8 @@ export interface SheetData {
 export interface Store {
   readonly kind: "sheets" | "csv";
   read(book: Book, sheet: string): Promise<SheetData>;
+  /** Read several sheets of one book in a single round trip. Sheets that can't be read come back empty. */
+  readMany(book: Book, sheets: string[]): Promise<SheetData[]>;
   /** Write specific cells on an existing (1-based) sheet row. Only the given headers are touched. */
   updateCells(book: Book, sheet: string, rowNumber: number, values: Record<string, string>): Promise<void>;
   /** Append a full row (values keyed by header; missing headers are blank). */

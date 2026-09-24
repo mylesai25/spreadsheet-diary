@@ -34,6 +34,43 @@ class AppSettings extends ChangeNotifier {
   }
 }
 
+/// The Virtual Closet pickers, kept in memory and on disk so opening the app or changing the date
+/// doesn't re-download ~100 KB. Refreshed from the server when older than 10 minutes.
+class ClosetCache {
+  static const _ttl = Duration(minutes: 10);
+  static const _kJson = 'closet_json', _kAt = 'closet_at', _kUrl = 'closet_url';
+  static Map<String, List<ClosetItem>>? _mem;
+  static DateTime? _at;
+  static String? _url;
+
+  static Map<String, List<ClosetItem>> _parse(Map<String, dynamic> j) =>
+      j.map((k, v) => MapEntry(k, (v as List).map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList()));
+
+  static Future<Map<String, List<ClosetItem>>> get(ApiClient api) async {
+    final now = DateTime.now();
+    if (_mem != null && _url == api.baseUrl && now.difference(_at!) < _ttl) return _mem!;
+    final prefs = await SharedPreferences.getInstance();
+    if (_mem == null && prefs.getString(_kUrl) == api.baseUrl) {
+      final raw = prefs.getString(_kJson), at = prefs.getInt(_kAt);
+      if (raw != null && at != null) {
+        try { _mem = _parse(jsonDecode(raw) as Map<String, dynamic>); _at = DateTime.fromMillisecondsSinceEpoch(at); _url = api.baseUrl; } catch (_) {}
+        if (_mem != null && now.difference(_at!) < _ttl) return _mem!;
+      }
+    }
+    try {
+      final fresh = await api.closet();
+      _mem = fresh; _at = now; _url = api.baseUrl;
+      await prefs.setString(_kJson, jsonEncode(fresh.map((k, v) => MapEntry(k, v.map((e) => {'id': e.id, 'label': e.label, 'values': e.values}).toList()))));
+      await prefs.setInt(_kAt, now.millisecondsSinceEpoch);
+      await prefs.setString(_kUrl, api.baseUrl);
+      return fresh;
+    } catch (e) {
+      if (_mem != null && _url == api.baseUrl) return _mem!;   // offline: stale beats empty
+      rethrow;
+    }
+  }
+}
+
 class ApiException implements Exception {
   ApiException(this.message, [this.status]);
   final String message;
@@ -76,7 +113,10 @@ class ApiClient {
 
   Future<Health> health() async => Health.fromJson(await _get('/api/health'));
   Future<List<Section>> schema() async => ((await _get('/api/schema'))['sections'] as List).map((e) => Section.fromJson(e as Map<String, dynamic>)).toList();
-  Future<DailyData> daily(String date) async => DailyData.fromJson(await _get('/api/daily', {'date': date}));
+  /// Daily data without the closet (see [ClosetCache], which fetches /api/closet once and keeps it).
+  Future<DailyData> daily(String date) async => DailyData.fromJson(await _get('/api/daily', {'date': date, 'closet': '0'}));
+  Future<Map<String, List<ClosetItem>>> closet() async =>
+      ((await _get('/api/closet'))['closet'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList()));
   Future<int> saveDaily(String date, Map<String, String> changes) async => (await _post('/api/daily', {'date': date, 'changes': changes}))['saved'] as int;
   Future<WeatherResult> weather({required String date, required String city, String state = '', String country = '', String wakeTime = ''}) async =>
       WeatherResult.fromJson(await _post('/api/weather', {'date': date, 'city': city, 'state': state, 'country': country, 'wakeTime': wakeTime}));

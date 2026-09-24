@@ -127,8 +127,8 @@ export function MultiInput({ value, onChange, options, placeholder }: { value: s
 export interface PickItem { id: string; label: string }
 
 /** Search-by-id-or-description picker for closet items. */
-export function ItemPicker({ value, items, onPick, onClear, placeholder }: {
-  value: string; items: PickItem[]; onPick: (item: PickItem) => void; onClear: () => void; placeholder?: string;
+export function ItemPicker({ value, items, onPick, onClear, placeholder, loading = false }: {
+  value: string; items: PickItem[]; onPick: (item: PickItem) => void; onClear: () => void; placeholder?: string; loading?: boolean;
 }) {
   const current = items.find((i) => i.id === value);
   const [draft, setDraft] = useState("");
@@ -149,13 +149,13 @@ export function ItemPicker({ value, items, onPick, onClear, placeholder }: {
           </button>
         ) : (
           <input type="text" className="min-w-0 flex-1 bg-transparent py-2 outline-none" value={draft} autoFocus={open && !!current}
-            placeholder={placeholder ?? "Search by # or description…"} autoComplete="off" inputMode="search"
+            placeholder={loading ? (value ? `#${value} · loading closet…` : "Loading closet…") : placeholder ?? "Search by # or description…"} autoComplete="off" inputMode="search"
             onChange={(e) => { setDraft(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)} onBlur={() => { setOpen(false); setDraft(""); }} onKeyDown={listKeys} />
         )}
         {(current || value) && <button type="button" className="px-1 text-muted hover:text-danger" aria-label="Clear" onMouseDown={(e) => { e.preventDefault(); onClear(); }}>×</button>}
       </div>
-      {value && !current && !open && <div className="mt-1 text-xs text-warn">#{value} isn’t in the closet sheet</div>}
+      {value && !current && !open && !loading && <div className="mt-1 text-xs text-warn">#{value} isn’t in the closet sheet</div>}
       <SuggestList items={items} label={label} sub={sub} keyOf={(i) => i.id} onPick={onPick} query={draft} open={open}
         onClose={() => { setOpen(false); setDraft(""); }} anchor={ref} active={active} setActive={setActive} />
     </div>

@@ -98,17 +98,20 @@ class DailyData {
         date: _s(j['date']), today: _s(j['today']), values: _strMap(j['values']), defaults: _strMap(j['defaults']), prev: _strMap(j['prev']),
         prevDate: j['prevDate'] as String?, weatherNote: j['weatherNote'] as String?,
         options: (j['options'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map(_s).toList())),
-        closet: (j['closet'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList())),
+        closet: j['closet'] == null ? const {} : (j['closet'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList())),
         isLogged: j['isLogged'] == true, loggedDates: (j['loggedDates'] as List).map(_s).toList(), storeKind: _s(j['storeKind']),
         outfits: j['outfits'] == null ? null : OutfitSuggestions.fromJson(j['outfits'] as Map<String, dynamic>),
       );
 }
 
 class OutfitPiece {
-  OutfitPiece(this.slot, this.id, this.label, this.values, this.why);
+  OutfitPiece(this.slot, this.id, this.label, this.values, this.why, {this.isNew = false});
   final String slot, id, label, why;
   final Map<String, String> values;
-  factory OutfitPiece.fromJson(Map<String, dynamic> j) => OutfitPiece(_s(j['slot']), _s(j['id']), _s(j['label']), _strMap(j['values']), _s(j['why']));
+  /// Never worn this year (e.g. just added to the Virtual Closet).
+  final bool isNew;
+  factory OutfitPiece.fromJson(Map<String, dynamic> j) =>
+      OutfitPiece(_s(j['slot']), _s(j['id']), _s(j['label']), _strMap(j['values']), _s(j['why']), isNew: j['isNew'] == true);
 }
 
 class OutfitSuggestion {
@@ -148,9 +151,12 @@ class OutfitSuggestion {
 }
 
 class OutfitSuggestions {
-  OutfitSuggestions({required this.feelsLike, required this.sky, required this.similarDays, required this.outfits, required this.shownKeys, required this.round, this.note, this.weekday = '', this.habits = const []});
+  OutfitSuggestions({required this.feelsLike, required this.sky, required this.similarDays, required this.outfits, required this.shownKeys, required this.round, this.note, this.weekday = '', this.habits = const [], this.engine = 'history', this.claudeAvailable = false});
   final double? feelsLike;
   final String sky, weekday;
+  /// 'claude' when Claude composed the outfits, 'history' for the instant/fallback picks.
+  final String engine;
+  final bool claudeAvailable;
   final List<String> habits;
   final int similarDays, round;
   final List<OutfitSuggestion> outfits;
@@ -160,7 +166,7 @@ class OutfitSuggestions {
         feelsLike: _d(j['weather']?['feelsLike']), sky: _s(j['weather']?['sky']), similarDays: (j['similarDays'] as num? ?? 0).toInt(),
         outfits: (j['outfits'] as List? ?? []).map((e) => OutfitSuggestion.fromJson(e as Map<String, dynamic>)).toList(),
         shownKeys: (j['shownKeys'] as List? ?? []).map(_s).toList(), round: (j['round'] as num? ?? 0).toInt(), note: j['note'] as String?,
-        weekday: _s(j['weekday']), habits: (j['habits'] as List? ?? []).map(_s).toList());
+        weekday: _s(j['weekday']), habits: (j['habits'] as List? ?? []).map(_s).toList(), engine: _s(j['engine']).isEmpty ? 'history' : _s(j['engine']), claudeAvailable: j['claudeAvailable'] == true);
 }
 
 class WeatherResult {

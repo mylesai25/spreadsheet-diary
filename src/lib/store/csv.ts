@@ -25,6 +25,10 @@ export class CsvStore implements Store {
     return { book, name: sheet, header, rows };
   }
 
+  readMany(book: Book, sheets: string[]): Promise<SheetData[]> {
+    return Promise.all(sheets.map((s) => this.read(book, s)));
+  }
+
   async updateCells(book: Book, sheet: string, rowNumber: number, values: Record<string, string>) {
     const data = await this.read(book, sheet);
     const idx = rowNumber - 2;

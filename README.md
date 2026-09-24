@@ -10,9 +10,12 @@ It reads and writes the Google Sheet directly — the sheet stays the source of 
   **Weather** (Sky / High / Low / Feels like) is auto-filled from [Open-Meteo](https://open-meteo.com) (no API key)
   for where you slept the previous night; "↻ Get weather" re-pulls it for whatever Wake Up City is on the form.
   Feels like = apparent temperature at your wake-up hour.
-  **Outfit ideas** in the Outfit section: three weather-appropriate outfits assembled from what you actually wear on
+  **Outfit ideas** in the Outfit section: weather-appropriate outfits assembled from what you actually wear on
   days that felt similar (temperature band, wet/dry, season), favoring pieces you haven't worn lately, and respecting
-  weekday color habits it detects in your history (e.g. blue shirts on Tuesdays) — no LLM involved. Hat/jacket only
+  weekday color habits it detects in your history (e.g. blue shirts on Tuesdays). With `ANTHROPIC_API_KEY` set,
+  Claude (`claude-sonnet-5`, override with `OUTFIT_MODEL`, disable with `OUTFIT_LLM=off`) composes the outfits from
+  those signals plus the whole closet; the page shows the instant history-based picks first, then swaps in Claude's.
+  Without a key the history engine's own picks are used (also the fallback if Claude errors). Hat/jacket only
   appear when you usually wear one in that weather (≥60% of similar days); socks follow the shoe (none with sandals).
   "Wear this" fills all the outfit fields; **↻ New ideas** gives a different set for the same weather (pieces already
   shown are set aside and the ranking reshuffled; resets when the weather changes).
@@ -64,7 +67,8 @@ Live at **https://spreadsheet-diary.vercel.app** (project `spreadsheet-diary`, p
 ```bash
 npx vercel --prod
 ```
-Env vars on Vercel mirror `.env.local` (`SHEET_ID`, `CLOSET_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `APP_TZ`)
+Env vars on Vercel mirror `.env.local` (`SHEET_ID`, `CLOSET_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `APP_TZ`,
+`ANTHROPIC_API_KEY` for Claude outfit ideas)
 **plus `APP_PASSWORD`**, which turns on the login gate (and bearer auth for `/api`). `.vercelignore` keeps
 `mobile/` and the data snapshots out of the upload.
 
@@ -83,6 +87,8 @@ A native client (iOS / Android / macOS / web) that uses this app as its backend 
 | `GET /api/activities` · `GET/POST /api/activities/:slug` | activity sheets |
 
 Auth: `Authorization: Bearer <APP_PASSWORD>` (or the web session cookie); open when `APP_PASSWORD` is unset.
+`/api/closet` serves the Virtual Closet pickers separately (`Cache-Control: max-age=600` + ETag); `/api/daily?closet=0`
+skips them, which is what the web form and the Flutter app do (both cache the closet for 10 minutes).
 See `mobile/README.md` for running it.
 
 ## Layout
@@ -90,7 +96,8 @@ See `mobile/README.md` for running it.
 ```
 src/app/                  Next.js App Router pages (dashboard, log, activities, login, manifest)
 src/components/           DailyForm, ActivityForm, form inputs, Recharts chart wrappers
-src/lib/store/            Store interface: SheetsStore (googleapis) and CsvStore (data/*.csv)
+src/lib/store/            Store interface: SheetsStore (googleapis; batchGet for multi-tab reads, per-instance cache:
+                          journal 60 s, closet 5 min, prior years 24 h) and CsvStore (data/*.csv)
 src/lib/schema/           daily.ts (sections/fields), closet.ts (closet → outfit columns), activities.ts
 src/lib/daily.ts          load a date's row, defaults, suggestion lists; diff-based save
 src/lib/metrics.ts        dashboard aggregation
@@ -98,8 +105,9 @@ src/lib/outfits.ts        weather-aware outfit suggester (similar-day scoring + 
 src/app/api/              JSON API used by the Flutter client
 src/proxy.ts              optional password gate (active only when APP_PASSWORD is set; /api uses bearer auth)
 mobile/                   Flutter client (see mobile/README.md)
-data/                     xlsx exports + per-sheet CSVs: csv/ (2026), csv-2025/, csv-2024/, closet/ (Sept 22, 2026 snapshot)
+data/                     xlsx exports + per-sheet CSVs: csv/ (2026), csv-2025/, csv-2024/ (Sept 22, 2026 snapshot), closet/ (Sept 23, 2026)
 scripts/xlsx2csv.py       stdlib xlsx → CSV converter (refresh data/ from a new export)
+scripts/sheet2csv.mjs     refresh data/closet (or csv/) straight from the live Google Sheet: node scripts/sheet2csv.mjs closet
 scripts/setup-google.sh   service-account bootstrap
 ```
 

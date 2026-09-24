@@ -3,6 +3,7 @@ import { DAILY_SHEET, getStore, type SheetData } from "./store";
 import { addDays, isoToSerial, isValidISODate } from "./dates";
 import { DAILY_AUTO_COLUMNS, DAILY_FIELDS } from "./schema/daily";
 import { CLOSET, type ClosetItem, type ClosetItems } from "./schema/closet";
+import { claudeOutfitsEnabled, suggestOutfitsWithClaude } from "./outfitsClaude";
 import type { ClosetKind } from "./schema/types";
 import { getDayWeather, weatherToColumns } from "./weather";
 import { suggestOutfits, type OutfitOptions, type OutfitSuggestions } from "./outfits";
@@ -20,7 +21,8 @@ export interface DailyPageData {
   prevDate: string | null;
   /** Suggestion lists for select / multi fields. */
   options: Record<string, string[]>;
-  closet: ClosetItems;
+  /** Closet pickers, or null when the caller fetches them separately from /api/closet. */
+  closet: ClosetItems | null;
   isLogged: boolean;
   /** ISO dates that have an entry, ascending. */
   loggedDates: string[];
@@ -63,8 +65,9 @@ function splitMulti(v: string): string[] {
   return v.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
-export async function loadDaily(date: string): Promise<DailyPageData> {
+export async function loadDaily(date: string, { closet: includeCloset = true }: { closet?: boolean } = {}): Promise<DailyPageData> {
   const store = getStore();
+  const closetP = loadCloset();                       // runs alongside the journal read and the weather lookup
   const data = await store.read("journal", DAILY_SHEET);
   const dateCol = data.header.indexOf("Date");
 
@@ -118,15 +121,16 @@ export async function loadDaily(date: string): Promise<DailyPageData> {
     options[f.key] = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v);
   }
 
-  const closet = await loadCloset();
+  const closet = await closetP;
   const eff = (k: string) => values[k] || defaults[k] || "";
   const toNum = (v: string) => (v === "" || Number.isNaN(Number(v)) ? null : Number(v));
-  const outfits = suggestOutfits(date, { feelsLike: toNum(eff("Feels Like (F)")), high: toNum(eff("High Temperature (F)")), sky: eff("Sky") }, allLogged, closet);
+  // Instant history-based picks; when Claude is configured the clients ask for its ideas right after rendering.
+  const outfits = { ...suggestOutfits(date, { feelsLike: toNum(eff("Feels Like (F)")), high: toNum(eff("High Temperature (F)")), sky: eff("Sky") }, allLogged, closet), claudeAvailable: claudeOutfitsEnabled() };
 
   return {
     date, rowNumber, values, defaults, prev: prevRec,
     prevDate: before.length ? before[before.length - 1].date : null,
-    options, closet, isLogged: loggedToday,
+    options, closet: includeCloset ? closet : null, isLogged: loggedToday,
     loggedDates, storeKind: store.kind, weatherNote, outfits,
   };
 }
@@ -134,10 +138,11 @@ export async function loadDaily(date: string): Promise<DailyPageData> {
 export async function loadCloset(): Promise<ClosetItems> {
   const store = getStore();
   const out = {} as ClosetItems;
-  for (const kind of Object.keys(CLOSET) as ClosetKind[]) {
+  const kinds = Object.keys(CLOSET) as ClosetKind[];
+  const sheets = await store.readMany("closet", kinds.map((k) => CLOSET[k].sheet));   // one Sheets round trip for all six tabs
+  kinds.forEach((kind, i) => {
     const cfg = CLOSET[kind];
-    let data: SheetData;
-    try { data = await store.read("closet", cfg.sheet); } catch { data = { book: "closet", name: cfg.sheet, header: [], rows: [] }; }
+    const data = sheets[i];
     const items: ClosetItem[] = [];
     for (const row of data.rows) {
       const rec = rowToRecord(data, row);
@@ -149,7 +154,7 @@ export async function loadCloset(): Promise<ClosetItems> {
       items.push({ id, label, values });
     }
     out[kind] = items;
-  }
+  });
   return out;
 }
 
@@ -172,7 +177,8 @@ export async function outfitsFor(date: string, weather: { feelsLike: number | nu
   const data = await store.read("journal", DAILY_SHEET);
   const dateCol = data.header.indexOf("Date");
   const logged = data.rows.filter((r) => r[dateCol] && isLoggedRow(data, r)).map((r) => rowToRecord(data, r));
-  return suggestOutfits(date, weather, logged, await loadCloset(), opts);
+  const closet = await loadCloset();
+  return claudeOutfitsEnabled() ? suggestOutfitsWithClaude(date, weather, logged, closet, opts) : suggestOutfits(date, weather, logged, closet, opts);
 }
 
 /** Persist changed cells for a date. Creates the date row if the sheet lacks one. */

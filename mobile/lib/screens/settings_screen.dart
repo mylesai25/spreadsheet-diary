@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../reminders.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,6 +14,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _pass;
   String? _status;
   bool _busy = false;
+  bool _remind = Reminders.enabled;
+  TimeOfDay _remindAt = TimeOfDay(hour: Reminders.hour, minute: Reminders.minute);
+  String? _remindNote;
+
+  Future<void> _toggleReminder(bool on) async {
+    final ok = await Reminders.setEnabled(on);
+    setState(() {
+      _remind = ok && on;
+      _remindNote = !ok ? 'Notifications are off for Diary — enable them in iOS Settings › Notifications.' : null;
+    });
+  }
+
+  Future<void> _pickReminderTime() async {
+    final t = await showTimePicker(context: context, initialTime: _remindAt);
+    if (t == null) return;
+    await Reminders.setTime(t.hour, t.minute);
+    setState(() => _remindAt = t);
+  }
 
   @override
   void initState() {
@@ -61,6 +80,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           FilledButton.icon(onPressed: _busy ? null : _saveAndTest, icon: const Icon(Icons.wifi_tethering), label: Text(_busy ? 'Testing…' : 'Save & test connection')),
           if (_status != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_status!, style: TextStyle(color: _status!.startsWith('Connected') ? cs.primary : cs.error))),
+          const SizedBox(height: 32),
+          Text('Reminders', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text('A nudge in the evening on days you haven’t logged yet. It’s cleared automatically once the day is filled in (the app checks whenever it opens or saves).', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Remind me if today isn’t logged'), value: _remind, onChanged: _toggleReminder),
+          ListTile(contentPadding: EdgeInsets.zero, enabled: _remind, title: const Text('Reminder time'), trailing: Text(_remindAt.format(context), style: Theme.of(context).textTheme.bodyLarge), onTap: _remind ? _pickReminderTime : null),
+          if (_remindNote != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_remindNote!, style: TextStyle(color: cs.error))),
           const SizedBox(height: 32),
           Text('About', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),

@@ -11,7 +11,7 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
   const { date: q } = await searchParams;
   const today = todayISO();
   const date = q && isValidISODate(q) ? q : today;
-  const data = await loadDaily(date);
+  const data = await loadDaily(date, { closet: false });   // the form fetches /api/closet itself (browser-cached)
 
   // Days in the last 60 with no entry (up to yesterday), for the "missing" jump.
   const logged = new Set(data.loggedDates);
