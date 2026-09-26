@@ -16,9 +16,9 @@ export function DateNav({ date, today, isLogged, missing }: { date: string; toda
           style={date >= today ? { pointerEvents: "none", opacity: 0.4 } : undefined}>›</Link>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-lg font-semibold">{date === today ? "Today · " : ""}{formatLongDate(date)}</div>
+        <div className="truncate text-lg font-bold">{date === today ? "Today · " : ""}{formatLongDate(date)}</div>
         <div className="text-xs text-muted">
-          {isLogged ? <span className="text-accent">● Logged</span> : <span>○ Not logged yet — prefilled with your usual answers</span>}
+          {isLogged ? <span className="font-bold text-neon">● Logged</span> : <span>○ Not logged yet — prefilled with your usual answers</span>}
         </div>
       </div>
       <div className="flex items-center gap-2">

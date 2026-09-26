@@ -102,7 +102,8 @@ src/lib/schema/           daily.ts (sections/fields), closet.ts (closet → outf
 src/lib/daily.ts          load a date's row, defaults, suggestion lists; diff-based save
 src/lib/metrics.ts        dashboard aggregation
 src/lib/outfits.ts        weather-aware outfit suggester (similar-day scoring + freshness)
-src/app/api/              JSON API used by the Flutter client
+src/app/api/              JSON API used by the Flutter client (incl. /api/closet/stats for the Closet tab)
+src/lib/closetStats.ts    Virtual Closet composition: green share, color families/shades, brands, wear this year
 src/proxy.ts              optional password gate (active only when APP_PASSWORD is set; /api uses bearer auth)
 mobile/                   Flutter client (see mobile/README.md)
 data/                     xlsx exports + per-sheet CSVs: csv/ (2026), csv-2025/, csv-2024/ (Sept 22, 2026 snapshot), closet/ (Sept 23, 2026)

@@ -1,7 +1,7 @@
 name: diary
 description: Native client for the Spreadsheet Diary (talks to the Next.js API).
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ^3.5.0

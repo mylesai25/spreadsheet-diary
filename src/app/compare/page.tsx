@@ -22,16 +22,16 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{c.yearA} vs. {c.yearB}</h1>
-          <p className="text-sm text-muted">{windowLabel} · {c.daysA} vs. {c.daysB} days logged</p>
+          <h1 className="text-2xl font-bold tracking-tight">{c.yearA} vs. {c.yearB}</h1>
+          <p className="text-sm text-ink-2">{windowLabel} · {c.daysA} vs. {c.daysB} days logged</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="seg">
-            {PRIOR_YEARS.map((y) => <Link key={y} href={href({ vs: y })} aria-pressed={y === yearB} role="button" style={{ padding: "0.375rem 0.75rem", fontSize: 13 }}>vs {y}</Link>)}
+            {PRIOR_YEARS.map((y) => <Link key={y} href={href({ vs: y })} aria-pressed={y === yearB} role="button">vs {y}</Link>)}
           </div>
           <div className="seg">
-            <Link href={href({ period: "same" })} aria-pressed={period === "same"} role="button" style={{ padding: "0.375rem 0.75rem", fontSize: 13 }}>Same period</Link>
-            <Link href={href({ period: "full" })} aria-pressed={period === "full"} role="button" style={{ padding: "0.375rem 0.75rem", fontSize: 13 }}>Full {c.yearB}</Link>
+            <Link href={href({ period: "same" })} aria-pressed={period === "same"} role="button">Same period</Link>
+            <Link href={href({ period: "full" })} aria-pressed={period === "full"} role="button">Full {c.yearB}</Link>
           </div>
         </div>
       </div>
@@ -43,23 +43,23 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {c.metrics.map((m) => <DeltaTile key={m.key} m={m} yearA={c.yearA} yearB={c.yearB} />)}
           </div>
-          <p className="-mt-1 text-xs text-muted">Green = moved in the good direction, red = the other way, grey = just different. Percent tiles show the change in points.</p>
+          <p className="-mt-1 text-xs text-muted">Lime = moved in the good direction, red = the other way, gray = just different. Percent tiles show the change in points.</p>
 
-          <h2 className="mt-2 text-lg font-semibold">Month by month</h2>
+          <h2 className="section-title mt-2">Month by month</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {c.monthly.map((ch) => (
               <ChartCard key={ch.key} title={ch.title}><MonthCompare data={ch.data} yearA={c.yearA} yearB={c.yearB} unit={ch.unit} /></ChartCard>
             ))}
           </div>
 
-          <h2 className="mt-2 text-lg font-semibold">Running totals</h2>
+          <h2 className="section-title mt-2">Running totals</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {c.cumulative.map((ch) => (
               <ChartCard key={ch.key} title={ch.title} sub="Cumulative by day of year"><CumulativeRace data={ch.data} yearA={c.yearA} yearB={c.yearB} unit={ch.unit} /></ChartCard>
             ))}
           </div>
 
-          <h2 className="mt-2 text-lg font-semibold">Then vs. now</h2>
+          <h2 className="section-title mt-2">Then vs. now</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {c.ranks.map((r) => (
               <ChartCard key={r.title} title={r.title} sub={r.sub}><RankTable data={r} yearA={c.yearA} yearB={c.yearB} /></ChartCard>

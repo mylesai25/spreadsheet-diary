@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../reminders.dart';
+import '../theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -70,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Diary server', style: Theme.of(context).textTheme.titleMedium),
+          const FigHeading('Diary server'),
           const SizedBox(height: 4),
           Text('The Next.js app that owns the Google Sheet. On the same Wi‑Fi use http://<your-mac>.local:3000; once deployed, the Vercel URL.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 12),
@@ -81,16 +82,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton.icon(onPressed: _busy ? null : _saveAndTest, icon: const Icon(Icons.wifi_tethering), label: Text(_busy ? 'Testing…' : 'Save & test connection')),
           if (_status != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_status!, style: TextStyle(color: _status!.startsWith('Connected') ? cs.primary : cs.error))),
           const SizedBox(height: 32),
-          Text('Reminders', style: Theme.of(context).textTheme.titleMedium),
+          const FigHeading('Reminders'),
           const SizedBox(height: 4),
           Text('A nudge in the evening on days you haven’t logged yet. It’s cleared automatically once the day is filled in (the app checks whenever it opens or saves).', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Remind me if today isn’t logged'), value: _remind, onChanged: _toggleReminder),
           ListTile(contentPadding: EdgeInsets.zero, enabled: _remind, title: const Text('Reminder time'), trailing: Text(_remindAt.format(context), style: Theme.of(context).textTheme.bodyLarge), onTap: _remind ? _pickReminderTime : null),
           if (_remindNote != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_remindNote!, style: TextStyle(color: cs.error))),
           const SizedBox(height: 32),
-          Text('About', style: Theme.of(context).textTheme.titleMedium),
+          const FigHeading('About'),
           const SizedBox(height: 4),
-          Text('Spreadsheet Diary · Flutter client 0.1. Entries are written straight to your Google Sheet through the server; weather and smart defaults come from there too.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          Text('Spreadsheet Diary · Flutter client 0.2. Entries are written straight to your Google Sheet through the server; weather and smart defaults come from there too.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ],
       ),
     );

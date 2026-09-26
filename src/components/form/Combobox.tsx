@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 
 interface Suggest<T> {
   items: T[];
@@ -11,7 +11,7 @@ interface Suggest<T> {
   query: string;
   open: boolean;
   onClose: () => void;
-  anchor: React.RefObject<HTMLElement | null>;
+  anchor: RefObject<HTMLElement | null>;
 }
 
 const MAX = 12;
@@ -32,19 +32,42 @@ function useFiltered<T>(items: T[], query: string, label: (t: T) => string, sub?
   }, [items, query, label, sub]);
 }
 
+/**
+ * Close the list on any press outside the field. `blur` alone isn't enough: iOS Safari doesn't move
+ * focus when you tap a non-focusable element, so the input never blurs and the list stayed open.
+ * Listening on pointerdown at the document level (capture phase) closes it wherever the tap lands,
+ * and drops focus from the field so the keyboard goes away too.
+ */
+function useDismissOutside(anchor: RefObject<HTMLElement | null>, open: boolean, onClose: () => void) {
+  const close = useRef(onClose);
+  useEffect(() => { close.current = onClose; }, [onClose]);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: Event) => {
+      const el = anchor.current;
+      if (!el || el.contains(e.target as Node)) return;
+      close.current();
+      const focused = document.activeElement as HTMLElement | null;
+      if (focused && el.contains(focused)) focused.blur();
+    };
+    document.addEventListener("pointerdown", handler, true);
+    return () => document.removeEventListener("pointerdown", handler, true);
+  }, [anchor, open]);
+}
+
 /** Dropdown list shared by the select / multi / closet inputs. */
-function SuggestList<T>({ items, label, sub, keyOf, onPick, query, open, onClose, active, setActive }: Suggest<T> & { active: number; setActive: (n: number) => void }) {
+function SuggestList<T>({ items, label, sub, keyOf, onPick, query, open, onClose, anchor, active, setActive }: Suggest<T> & { active: number; setActive: (n: number) => void }) {
   const filtered = useFiltered(items, query, label, sub);
   useEffect(() => { setActive(0); }, [query, setActive]);
+  useDismissOutside(anchor, open, onClose);
   if (!open || filtered.length === 0) return null;
   return (
-    <ul role="listbox" className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-lg border border-border bg-surface p-1 shadow-lg">
+    <ul role="listbox" className="menu">
       {filtered.map((it, i) => (
         <li key={keyOf(it)} role="option" aria-selected={i === active}
           onMouseDown={(e) => { e.preventDefault(); onPick(it); onClose(); }}
-          onMouseEnter={() => setActive(i)}
-          className={`cursor-pointer rounded-md px-2 py-1.5 text-sm ${i === active ? "bg-accent-soft text-ink" : "text-ink-2"}`}>
-          <span className="text-ink">{label(it)}</span>
+          onMouseEnter={() => setActive(i)}>
+          <span>{label(it)}</span>
           {sub?.(it) && <span className="ml-2 text-xs text-muted">{sub(it)}</span>}
         </li>
       ))}
@@ -144,7 +167,7 @@ export function ItemPicker({ value, items, onPick, onClear, placeholder, loading
       <div className="control flex items-center gap-2 py-0">
         {current && !open ? (
           <button type="button" className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left" onClick={() => setOpen(true)}>
-            <span className="font-mono text-sm text-accent">#{current.id}</span>
+            <span className="font-mono text-sm font-bold text-neon">#{current.id}</span>
             <span className="truncate text-sm">{current.label}</span>
           </button>
         ) : (

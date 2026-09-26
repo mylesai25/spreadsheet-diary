@@ -60,7 +60,7 @@ export function ActivityForm({ data }: { data: ActivityPageData }) {
   return (
     <form onSubmit={submit} className="card p-4 sm:p-5">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">Add {data.groups.length > 1 ? "" : "entry"}</h2>
+        <h2 className="text-base font-bold">Add {data.groups.length > 1 ? "" : "entry"}</h2>
         {data.groups.length > 1 && (
           <div className="seg">
             {data.groups.map((g, i) => (

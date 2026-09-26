@@ -123,6 +123,7 @@ class ApiClient {
   Future<OutfitSuggestions> outfits({required String date, String feels = '', String high = '', String sky = '', List<String> seen = const [], int seed = 0}) async =>
       OutfitSuggestions.fromJson(await _get('/api/outfits', {'date': date, 'feels': feels, 'high': high, 'sky': sky, 'seen': seen.join(','), 'seed': '$seed'}));
   Future<Dashboard> dashboard(String range) async => Dashboard.fromJson(await _get('/api/dashboard', {'range': range}));
+  Future<ClosetStats> closetStats() async => ClosetStats.fromJson(await _get('/api/closet/stats'));
   Future<List<ActivityInfo>> activities() async => ((await _get('/api/activities'))['activities'] as List).map((e) => ActivityInfo.fromJson(e as Map<String, dynamic>)).toList();
   Future<ActivityData> activity(String slug) async => ActivityData.fromJson(await _get('/api/activities/$slug'));
   Future<void> saveActivity(String slug, Map<String, String> values, int groupIndex) async => _post('/api/activities/$slug', {'values': values, 'groupIndex': groupIndex});

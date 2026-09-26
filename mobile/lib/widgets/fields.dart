@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/models.dart';
+import '../theme.dart';
 
 /// Field renderers shared by the daily log and activity forms.
 /// Values are always strings (what the sheet stores): "TRUE"/"FALSE", "HH:MM", "A, B, C".
@@ -13,7 +14,7 @@ class FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 4),
-        child: Text(changed ? '$text •' : text, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        child: Text(changed ? '$text •' : text, style: const TextStyle(color: Fig.ink2, fontSize: 13, fontWeight: FontWeight.w600)),
       );
 }
 
@@ -52,8 +53,8 @@ class RatingField extends StatelessWidget {
             label: Text('$k'),
             selected: n == k,
             showCheckmark: false,
-            selectedColor: cs.primary,
-            labelStyle: TextStyle(color: n == k ? cs.onPrimary : cs.onSurface, fontWeight: FontWeight.w600),
+            selectedColor: Fig.neon,
+            labelStyle: TextStyle(color: n == k ? Colors.black : cs.onSurface, fontWeight: n == k ? FontWeight.w800 : FontWeight.w500),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             onSelected: (_) => onChanged(n == k ? '' : '$k'),
@@ -185,8 +186,9 @@ class SelectField extends StatelessWidget {
           optionsViewBuilder: (context, onSelected, opts) => Align(
             alignment: Alignment.topLeft,
             child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(12),
+              elevation: 0,
+              color: Fig.paper,
+              shape: Fig.frame,
               child: SizedBox(
                 width: constraints.maxWidth,
                 child: ListView(
@@ -262,8 +264,9 @@ class _MultiFieldState extends State<MultiField> {
             optionsViewBuilder: (context, onSelected, opts) => Align(
               alignment: Alignment.topLeft,
               child: Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(12),
+                elevation: 0,
+                color: Fig.paper,
+                shape: Fig.frame,
                 child: SizedBox(width: constraints.maxWidth, child: ListView(shrinkWrap: true, padding: EdgeInsets.zero, children: [for (final o in opts) ListTile(dense: true, title: Text(o), onTap: () => onSelected(o))])),
               ),
             ),
@@ -298,7 +301,7 @@ class ClosetField extends StatelessWidget {
       child: Row(
         children: [
           if (current != null) ...[
-            Text('#${current.id}', style: TextStyle(color: cs.primary, fontFeatures: const [FontFeature.tabularFigures()])),
+            Text('#${current.id}', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800, fontFeatures: [FontFeature.tabularFigures()])),
             const SizedBox(width: 8),
             Expanded(child: Text(current.label, overflow: TextOverflow.ellipsis, style: TextStyle(color: cs.onSurface))),
             IconButton(icon: const Icon(Icons.close, size: 18), onPressed: onClear, visualDensity: VisualDensity.compact),
@@ -340,7 +343,7 @@ class _ClosetSheetState extends State<_ClosetSheet> {
               itemCount: list.length,
               itemBuilder: (context, i) => ListTile(
                 dense: true,
-                leading: Text('#${list[i].id}', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600)),
+                leading: Text('#${list[i].id}', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800)),
                 title: Text(list[i].label),
                 onTap: () => Navigator.pop(context, list[i]),
               ),

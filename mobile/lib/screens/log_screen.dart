@@ -5,6 +5,7 @@ import '../api/client.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../reminders.dart';
+import '../theme.dart';
 import '../widgets/fields.dart';
 
 /// Daily Overview entry: the same sectioned form as the web app, driven by /api/schema.
@@ -162,7 +163,6 @@ class _LogScreenState extends State<LogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final today = _data?.today ?? DateTime.now().toIso8601String().substring(0, 10);
     final dirty = _changes.length;
     return Scaffold(
@@ -182,7 +182,7 @@ class _LogScreenState extends State<LogScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(_date == today ? 'Today' : DateFormat('EEEE, MMM d').format(DateTime.parse(_date)), style: Theme.of(context).textTheme.titleMedium),
-                    Text(_data == null ? _date : (_data!.isLogged ? '● Logged' : '○ Not logged — prefilled'), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: _data?.isLogged == true ? cs.primary : cs.onSurfaceVariant)),
+                    Text(_data == null ? _date : (_data!.isLogged ? '● Logged' : '○ Not logged — prefilled'), style: TextStyle(fontSize: 11, color: _data?.isLogged == true ? Fig.neon : Fig.ink2, fontWeight: _data?.isLogged == true ? FontWeight.w800 : FontWeight.w400)),
                   ],
                 ),
               ),
@@ -209,6 +209,8 @@ class _LogScreenState extends State<LogScreen> {
                               padding: const EdgeInsets.only(right: 6),
                               child: ActionChip(
                                 label: Text('${s.icon} ${s.title}'),
+                                backgroundColor: Fig.paper,
+                                side: const BorderSide(color: Fig.border, width: Fig.frameWidth),
                                 visualDensity: VisualDensity.compact,
                                 onPressed: () {
                                   final ctx = _sectionKeys[s.id]?.currentContext;
@@ -230,12 +232,14 @@ class _LogScreenState extends State<LogScreen> {
                 ),
       bottomNavigationBar: _data == null
           ? null
-          : SafeArea(
+          : Container(
+              decoration: const BoxDecoration(color: Fig.paper, border: Border(top: BorderSide(color: Fig.neon, width: Fig.frameWidth))),
+              child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Row(
                   children: [
-                    Expanded(child: Text(dirty > 0 ? '$dirty unsaved change${dirty == 1 ? '' : 's'}' : 'All saved${_data!.storeKind == 'csv' ? ' · local CSV mode' : ''}', style: TextStyle(color: cs.onSurfaceVariant))),
+                    Expanded(child: Text(dirty > 0 ? '$dirty unsaved change${dirty == 1 ? '' : 's'}' : 'All saved${_data!.storeKind == 'csv' ? ' · local CSV mode' : ''}', style: Fig.small)),
                     if (dirty > 0) TextButton(onPressed: () => setState(() => _values = Map.of(_saved)), child: const Text('Discard')),
                     const SizedBox(width: 8),
                     FilledButton.icon(
@@ -247,6 +251,7 @@ class _LogScreenState extends State<LogScreen> {
                 ),
               ),
             ),
+            ),
     );
   }
 
@@ -254,12 +259,10 @@ class _LogScreenState extends State<LogScreen> {
 
   Widget _buildSection(Section s) {
     final key = _sectionKeys.putIfAbsent(s.id, GlobalKey.new);
-    final cs = Theme.of(context).colorScheme;
     return Padding(
       key: key,
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
-        color: cs.surfaceContainerLow,
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -267,7 +270,7 @@ class _LogScreenState extends State<LogScreen> {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text('${s.icon} ${s.title}', style: Theme.of(context).textTheme.titleMedium)),
+                  Expanded(child: Text('${s.icon} ${s.title}', style: Fig.cardTitle.copyWith(fontSize: 16))),
                   if (s.id == 'day')
                     TextButton.icon(
                       onPressed: _weatherBusy ? null : _getWeather,
@@ -285,17 +288,17 @@ class _LogScreenState extends State<LogScreen> {
               ),
               if (s.id == 'outfit' && _outfits != null) _OutfitIdeas(data: _outfits!, busy: _outfitsBusy, onRefresh: _refreshOutfits, onWear: (patch) { _patch(patch); _toast('Outfit applied — review and save'); }),
               if (s.id == 'day' && _weatherNote != null)
-                Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(_weatherNote!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant))),
+                Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(_weatherNote!, style: Fig.smallMuted)),
               for (final item in s.items)
                 if (item.group != null)
                   Container(
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(border: Border.all(color: cs.outlineVariant), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(border: Border.all(color: Fig.border, width: Fig.frameWidth), borderRadius: BorderRadius.circular(Fig.radius)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(item.group!.title, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(item.group!.title, style: const TextStyle(color: Fig.neon, fontSize: 13, fontWeight: FontWeight.w800)),
                         for (final f in item.group!.fields) if (_visible(f)) _field(f),
                       ],
                     ),
@@ -365,13 +368,13 @@ class _OutfitIdeas extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 4),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.35), borderRadius: BorderRadius.circular(12), border: Border.all(color: cs.primary.withValues(alpha: 0.3))),
+      decoration: BoxDecoration(color: Fig.surface2.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(Fig.radius), border: Border.all(color: Fig.border, width: Fig.frameWidth)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(children: [
             const Text('✨ ', style: TextStyle(fontSize: 14)),
-            Text('Outfit ideas', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+            const Text('Outfit ideas', style: TextStyle(color: Fig.ink, fontSize: 14, fontWeight: FontWeight.w800)),
             const SizedBox(width: 8),
             Expanded(child: Text('$desc${data.similarDays > 0 ? ' · ${data.similarDays} similar days' : ''}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
             TextButton.icon(icon: busy ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh, size: 16), label: Text(busy && data.claudeAvailable ? 'Asking Claude…' : 'New ideas'), onPressed: busy ? null : onRefresh, style: TextButton.styleFrom(visualDensity: VisualDensity.compact)),
@@ -395,11 +398,11 @@ class _OutfitIdeas extends StatelessWidget {
                   return Container(
                     width: 260,
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: cs.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: cs.outlineVariant)),
+                    decoration: BoxDecoration(color: Fig.paper, borderRadius: BorderRadius.circular(Fig.radius), border: Border.all(color: Fig.neon, width: Fig.frameWidth)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(o.title, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
+                        Text(o.title, style: const TextStyle(color: Fig.ink, fontSize: 14, fontWeight: FontWeight.w800)),
                         Text(o.tagline, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                         const SizedBox(height: 6),
                         Expanded(
@@ -413,16 +416,16 @@ class _OutfitIdeas extends StatelessWidget {
                                     message: p.why,
                                     child: RichText(text: TextSpan(style: Theme.of(context).textTheme.bodySmall, children: [
                                       TextSpan(text: '${_slotIcon[p.slot] ?? ''} '),
-                                      TextSpan(text: '#${p.id} ', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600)),
+                                      TextSpan(text: '#${p.id} ', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800)),
                                       TextSpan(text: p.label),
-                                      if (p.isNew) TextSpan(text: '  NEW', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w700, fontSize: 10)),
+                                      if (p.isNew) const TextSpan(text: '  NEW', style: TextStyle(color: Colors.black, backgroundColor: Fig.neon, fontWeight: FontWeight.w800, fontSize: 10)),
                                     ])),
                                   ),
                                 ),
                             ],
                           ),
                         ),
-                        Align(alignment: Alignment.centerLeft, child: FilledButton.tonal(onPressed: () => onWear(o.toPatch()), style: FilledButton.styleFrom(visualDensity: VisualDensity.compact), child: const Text('Wear this'))),
+                        Align(alignment: Alignment.centerLeft, child: FilledButton(onPressed: () => onWear(o.toPatch()), style: FilledButton.styleFrom(visualDensity: VisualDensity.compact), child: const Text('Wear this'))),
                       ],
                     ),
                   );

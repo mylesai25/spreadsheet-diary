@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { buildDashboard, RANGES, type Range } from "@/lib/metrics";
 import { formatShortDate, todayISO } from "@/lib/dates";
-import { ChartCard, DayBars, GolfChart, RankBars, TimeLines, WeekBars } from "@/components/charts/Charts";
+import { ChartCard, DayBars, GolfChart, RankBars, Tile, TimeLines, WeekBars } from "@/components/charts/Charts";
+import { buildClosetStats } from "@/lib/closetStats";
+import { ClosetStatsView } from "@/components/ClosetStatsView";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
-  const { range: q } = await searchParams;
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string; view?: string }> }) {
+  const { range: q, view } = await searchParams;
   const range: Range = RANGES.some((r) => r.key === q) ? (q as Range) : "30d";
+  if (view === "closet") return <ClosetPage />;
   const d = await buildDashboard(range);
   const today = todayISO();
   const weekly = d.days.length > 60;
@@ -16,36 +19,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted">
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-ink-2">
             {formatShortDate(d.start)} – {formatShortDate(d.end)} · {d.daysLogged} days logged
             {d.missingDays > 0 && <> · <Link href="/log" className="text-warn underline-offset-2 hover:underline">{d.missingDays} missing</Link></>}
             {d.storeKind === "csv" && " · local CSV mode"}
           </p>
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
-          <div className="seg overflow-x-auto [scrollbar-width:none]">
-            {RANGES.map((r) => (
-              <Link key={r.key} href={`/?range=${r.key}`} aria-pressed={r.key === range} role="button"
-                className={r.key === range ? "!bg-accent !text-accent-ink" : ""}
-                style={{ padding: "0.375rem 0.75rem", fontSize: 13 }}>
-                {r.label}
-              </Link>
-            ))}
-          </div>
+          <RangeTabs range={range} />
           <Link href="/log" className="btn-primary ml-auto shrink-0 sm:ml-0">Log today</Link>
         </div>
       </div>
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {d.tiles.map((t) => (
-          <div key={t.label} className="card px-4 py-3">
-            <div className="text-xs font-medium text-muted">{t.label}</div>
-            <div className="mt-0.5 text-2xl font-semibold tracking-tight">{t.value}</div>
-            {t.sub && <div className="text-xs text-ink-2">{t.sub}</div>}
-          </div>
-        ))}
+        {d.tiles.map((t) => <Tile key={t.label} {...t} />)}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -88,12 +77,43 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <ChartCard title="Video games" sub="Days played"><RankBars data={d.videoGames} /></ChartCard>
         <div className="card flex flex-col justify-between p-4">
           <div>
-            <h3 className="text-sm font-semibold">Keep the streak</h3>
+            <h3 className="text-[15px] font-bold">Keep the streak</h3>
             <p className="mt-1 text-sm text-ink-2">Today is {formatShortDate(today)}. Entries save straight to your Google Sheet.</p>
           </div>
           <Link href="/log" className="btn-primary mt-3 self-start">Log today →</Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Time-range pills plus the Closet tab (which isn't a time range: it's the whole Virtual Closet). */
+function RangeTabs({ range }: { range: Range | "closet" }) {
+  return (
+    <div className="seg overflow-x-auto [scrollbar-width:none]">
+      {RANGES.map((r) => (
+        <Link key={r.key} href={`/?range=${r.key}`} aria-pressed={r.key === range} role="button">{r.label}</Link>
+      ))}
+      <Link href="/?view=closet" aria-pressed={range === "closet"} role="button">👕 Closet</Link>
+    </div>
+  );
+}
+
+async function ClosetPage() {
+  const s = await buildClosetStats();
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Virtual Closet</h1>
+          <p className="text-sm text-ink-2">{s.total} pieces · {s.greenPct}% green · {s.anyGreenPct}% with some green{s.storeKind === "csv" && " · local CSV mode"}</p>
+        </div>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <RangeTabs range="closet" />
+          <Link href="/log" className="btn-primary ml-auto shrink-0 sm:ml-0">Log today</Link>
+        </div>
+      </div>
+      <ClosetStatsView s={s} />
     </div>
   );
 }

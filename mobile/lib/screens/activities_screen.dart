@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../models/models.dart';
+import '../theme.dart';
 import '../widgets/fields.dart';
 
 /// Activity sheets (Golf, Restaurant, …): list → add-entry form + recent entries.
@@ -32,11 +33,10 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
               children: [
                 for (final a in snap.data!)
                   Card(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: Text(a.icon, style: const TextStyle(fontSize: 24)),
-                      title: Text(a.title),
+                      title: Text(a.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                       subtitle: Text('Sheet: ${a.sheet}'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ActivityDetail(info: a))),
@@ -101,7 +101,6 @@ class _ActivityDetailState extends State<ActivityDetail> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final d = _data;
     return Scaffold(
       appBar: AppBar(title: Text('${widget.info.icon} ${widget.info.title}')),
@@ -111,14 +110,13 @@ class _ActivityDetailState extends State<ActivityDetail> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
               children: [
                 Card(
-                  color: cs.surfaceContainerLow,
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(children: [
-                          Expanded(child: Text('Add entry', style: Theme.of(context).textTheme.titleMedium)),
+                          const Expanded(child: Text('Add entry', style: Fig.cardTitle)),
                           if (d.groups.length > 1)
                             SegmentedButton<int>(
                               segments: [for (var i = 0; i < d.groups.length; i++) ButtonSegment(value: i, label: Text(d.groups[i].title))],
@@ -143,17 +141,17 @@ class _ActivityDetailState extends State<ActivityDetail> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text('Recent entries · ${d.total} total', style: Theme.of(context).textTheme.titleSmall),
+                FigHeading('Recent entries · ${d.total} total'),
                 const SizedBox(height: 6),
                 for (final r in d.recent.take(15))
                   Card(
-                    color: cs.surfaceContainerLow,
+                    shape: Fig.frameDim,
                     margin: const EdgeInsets.only(bottom: 6),
                     child: ListTile(
                       dense: true,
                       title: Text(d.listCols.skip(1).map((c) => r[c] ?? '').where((v) => v.isNotEmpty).take(2).join(' · ')),
                       subtitle: Text(d.listCols.skip(3).map((c) => '$c: ${r[c] ?? ''}').where((v) => !v.endsWith(': ')).join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      leading: Text(r[d.listCols.first] ?? '', style: Theme.of(context).textTheme.labelSmall),
+                      leading: Text(r[d.listCols.first] ?? '', style: const TextStyle(color: Fig.neon, fontSize: 11, fontWeight: FontWeight.w800)),
                     ),
                   ),
               ],

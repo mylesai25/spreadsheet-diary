@@ -183,11 +183,11 @@ export function DailyForm({ data }: { data: DailyPageData }) {
   return (
     <div>
       {/* Section tabs */}
-      <div className="sticky top-[49px] z-20 -mx-4 mb-4 overflow-x-auto border-b border-border bg-page/90 px-4 py-2 backdrop-blur [scrollbar-width:none] sm:-mx-6 sm:px-6">
+      <div className="sticky top-[49px] z-20 -mx-4 mb-4 overflow-x-auto border-b-[1.5px] border-border bg-black/90 px-4 py-2 backdrop-blur [scrollbar-width:none] sm:-mx-6 sm:px-6">
         <div className="flex gap-1">
           {DAILY_SECTIONS.map((s) => (
             <a key={s.id} href={`#${s.id}`}
-              className={`shrink-0 rounded-full px-3 py-1 text-sm ${activeSection === s.id ? "bg-ink text-page" : "bg-surface-2 text-ink-2 hover:text-ink"}`}>
+              className="tab shrink-0" aria-current={activeSection === s.id}>
               <span aria-hidden>{s.icon}</span> {s.title}
             </a>
           ))}
@@ -200,7 +200,7 @@ export function DailyForm({ data }: { data: DailyPageData }) {
           return (
             <section key={s.id} id={s.id} data-section={s.id} ref={(el) => { sectionRefs.current[s.id] = el; }} className="card p-4 sm:p-5">
               <header className="mb-3 flex items-center justify-between gap-2">
-                <h2 className="text-base font-semibold"><span aria-hidden className="mr-1.5">{s.icon}</span>{s.title}</h2>
+                <h2 className="text-base font-bold"><span aria-hidden className="mr-1.5">{s.icon}</span>{s.title}</h2>
                 {s.id === "day" && (
                   <button type="button" className="btn-ghost !py-1 text-xs" onClick={getWeather} disabled={weatherBusy}
                     title="Fill Sky / High / Low / Feels like for this date at the Wake Up City">
@@ -218,8 +218,8 @@ export function DailyForm({ data }: { data: DailyPageData }) {
               <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
                 {s.items.map((item, idx) =>
                   isGroup(item) ? (
-                    <fieldset key={item.group} className="col-span-full rounded-xl border border-border bg-page/50 p-3">
-                      <legend className="px-1 text-sm font-medium text-ink-2">{item.group}</legend>
+                    <fieldset key={item.group} className="col-span-full rounded-[2px] border-[1.5px] border-border p-3">
+                      <legend className="px-1 text-sm font-bold text-neon">{item.group}</legend>
                       <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">{item.fields.map(renderField)}</div>
                     </fieldset>
                   ) : (
@@ -233,7 +233,7 @@ export function DailyForm({ data }: { data: DailyPageData }) {
       </div>
 
       {/* Save bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur [padding-bottom:env(safe-area-inset-bottom)]">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t-[1.5px] border-neon bg-black/95 backdrop-blur [padding-bottom:env(safe-area-inset-bottom)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
           <div className="text-sm text-ink-2">
             {toast ? (

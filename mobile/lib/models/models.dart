@@ -213,6 +213,37 @@ class GolfRound {
   factory GolfRound.fromJson(Map<String, dynamic> j) => GolfRound(_s(j['date']), _s(j['course']), _d(j['score']) ?? 0, _d(j['toPar']) ?? 0, _d(j['putts']));
 }
 
+class ClosetKindStats {
+  ClosetKindStats(this.kind, this.label, this.total, this.green, this.greenPct, this.anyGreen, this.anyGreenPct, this.wornThisYear, this.wornPct, this.types);
+  final String kind, label;
+  final int total, green, anyGreen, wornThisYear;
+  final double greenPct, anyGreenPct, wornPct;
+  final List<Count> types;
+  factory ClosetKindStats.fromJson(Map<String, dynamic> j) => ClosetKindStats(
+      _s(j['kind']), _s(j['label']), (j['total'] as num? ?? 0).toInt(), (j['green'] as num? ?? 0).toInt(), _d(j['greenPct']) ?? 0,
+      (j['anyGreen'] as num? ?? 0).toInt(), _d(j['anyGreenPct']) ?? 0, (j['wornThisYear'] as num? ?? 0).toInt(), _d(j['wornPct']) ?? 0,
+      (j['types'] as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList());
+}
+
+/// /api/closet/stats — how green the Virtual Closet is, and how much of it gets worn.
+class ClosetStats {
+  ClosetStats({required this.year, required this.total, required this.greenPct, required this.anyGreenPct, required this.wornPct, required this.tiles, required this.kinds,
+      required this.colorFamilies, required this.greenShades, required this.greenAccents, required this.brands, required this.mostWorn});
+  final String year;
+  final int total;
+  final double greenPct, anyGreenPct, wornPct;
+  final List<Tile> tiles;
+  final List<ClosetKindStats> kinds;
+  final List<Count> colorFamilies, greenShades, greenAccents, brands, mostWorn;
+  static List<Count> _counts(dynamic v) => (v as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList();
+  factory ClosetStats.fromJson(Map<String, dynamic> j) => ClosetStats(
+        year: _s(j['year']), total: (j['total'] as num? ?? 0).toInt(), greenPct: _d(j['greenPct']) ?? 0, anyGreenPct: _d(j['anyGreenPct']) ?? 0, wornPct: _d(j['wornPct']) ?? 0,
+        tiles: (j['tiles'] as List? ?? []).map((e) => Tile.fromJson(e as Map<String, dynamic>)).toList(),
+        kinds: (j['kinds'] as List? ?? []).map((e) => ClosetKindStats.fromJson(e as Map<String, dynamic>)).toList(),
+        colorFamilies: _counts(j['colorFamilies']), greenShades: _counts(j['greenShades']), greenAccents: _counts(j['greenAccents']), brands: _counts(j['brands']), mostWorn: _counts(j['mostWorn']),
+      );
+}
+
 class Dashboard {
   Dashboard({required this.range, required this.start, required this.end, required this.daysLogged, required this.missingDays, required this.tiles, required this.days, required this.weeks,
       required this.shirtColors, required this.sky, required this.wakeCities, required this.people, required this.cuisines, required this.restaurants, required this.golf});
