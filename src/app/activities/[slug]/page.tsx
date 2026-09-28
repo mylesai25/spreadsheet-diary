@@ -31,7 +31,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ slug:
       <ActivityForm data={data} />
 
       <section className="card overflow-hidden">
-        <header className="border-b-[1.5px] border-neon px-4 py-3"><h2 className="text-[15px] font-bold">Recent entries</h2></header>
+        <header className="border-b border-line px-4 py-3"><h2 className="text-[15px] font-bold">Recent entries</h2></header>
         {data.recent.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted">Nothing logged yet.</p>
         ) : (

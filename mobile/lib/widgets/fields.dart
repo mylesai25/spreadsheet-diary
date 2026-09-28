@@ -54,7 +54,7 @@ class RatingField extends StatelessWidget {
             selected: n == k,
             showCheckmark: false,
             selectedColor: Fig.neon,
-            labelStyle: TextStyle(color: n == k ? Colors.black : cs.onSurface, fontWeight: n == k ? FontWeight.w800 : FontWeight.w500),
+            labelStyle: TextStyle(color: n == k ? Fig.paper : cs.onSurface, fontWeight: n == k ? FontWeight.w700 : FontWeight.w500),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             onSelected: (_) => onChanged(n == k ? '' : '$k'),
@@ -188,7 +188,7 @@ class SelectField extends StatelessWidget {
             child: Material(
               elevation: 0,
               color: Fig.paper,
-              shape: Fig.frame,
+              shape: Fig.frameShape,
               child: SizedBox(
                 width: constraints.maxWidth,
                 child: ListView(
@@ -266,7 +266,7 @@ class _MultiFieldState extends State<MultiField> {
               child: Material(
                 elevation: 0,
                 color: Fig.paper,
-                shape: Fig.frame,
+                shape: Fig.frameShape,
                 child: SizedBox(width: constraints.maxWidth, child: ListView(shrinkWrap: true, padding: EdgeInsets.zero, children: [for (final o in opts) ListTile(dense: true, title: Text(o), onTap: () => onSelected(o))])),
               ),
             ),

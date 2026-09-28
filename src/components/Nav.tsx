@@ -12,16 +12,16 @@ const primary = [
 ];
 
 const link = (active: boolean) =>
-  `shrink-0 rounded-[2px] px-3 py-1.5 text-sm transition ${active ? "bg-neon font-bold text-black" : "font-medium text-ink-2 hover:text-neon"}`;
+  `shrink-0 rounded-md px-3 py-1.5 text-sm transition ${active ? "bg-accent-soft font-semibold text-neon" : "font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"}`;
 
 export function Nav() {
   const path = usePathname();
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
-    <header className="sticky top-0 z-30 border-b-[1.5px] border-neon bg-black/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-line bg-page/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">
         <Link href="/" className="mr-2 flex items-center gap-2 font-bold tracking-tight">
-          <span aria-hidden className="grid h-7 w-7 place-items-center border-[1.5px] border-neon bg-black text-sm">📓</span>
+          <span aria-hidden className="grid h-7 w-7 place-items-center rounded-md border border-frame bg-surface text-sm">📓</span>
           <span className="hidden sm:inline">Diary</span>
         </Link>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none]">

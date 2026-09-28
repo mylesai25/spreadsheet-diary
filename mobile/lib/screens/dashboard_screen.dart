@@ -74,7 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Expanded(child: Text('ANY', style: Fig.tileLabel)),
                       Expanded(child: Text('WORN', style: Fig.tileLabel)),
                     ]),
-                    const Divider(height: 10, thickness: 1.5, color: Fig.neon),
+                    const Divider(height: 10, thickness: 1, color: Fig.frame),
                     for (final k in s.kinds)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -182,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static List<FlSpot> _spots(List<DayPoint> days, double? Function(DayPoint) f) => [for (var i = 0; i < days.length; i++) if (f(days[i]) != null) FlSpot(i.toDouble(), f(days[i])!)];
 
   static BarChartRodData _rod(double y, {Color? fill, Color? stroke, double width = 8}) =>
-      BarChartRodData(toY: y, color: fill ?? Fig.fill, width: width, borderRadius: BorderRadius.zero, borderSide: BorderSide(color: stroke ?? Fig.neon, width: 1.2));
+      BarChartRodData(toY: y, color: fill ?? Fig.fill, width: width, borderRadius: const BorderRadius.vertical(top: Radius.circular(2)), borderSide: BorderSide(color: stroke ?? Fig.neon, width: 1));
 
   Widget _sleepChart(Dashboard d) {
     if (d.days.isEmpty) return const _Empty();
@@ -303,7 +303,7 @@ class _RankBars extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: FractionallySizedBox(
                   widthFactor: (data[i].value / max).clamp(0.03, 1),
-                  child: Container(height: 15, decoration: BoxDecoration(color: colorByName ? (Fig.colorFor(data[i].name) ?? Fig.ramp(i, data.length)) : Fig.ramp(i, data.length), border: Border.all(color: Fig.neon, width: 1.2))),
+                  child: Container(height: 15, decoration: BoxDecoration(color: colorByName ? (Fig.colorFor(data[i].name) ?? Fig.ramp(i, data.length)) : Fig.ramp(i, data.length), borderRadius: BorderRadius.circular(3), border: Border.all(color: Fig.neon.withValues(alpha: 0.7), width: 1))),
                 ),
               ),
             ),
@@ -347,7 +347,7 @@ class _VerticalBars extends StatelessWidget {
                       const SizedBox(height: 2),
                       Container(
                         height: ((data[i].value / max) * (height - 22)).clamp(2.0, height - 22),
-                        decoration: BoxDecoration(color: colorByName ? (Fig.colorFor(data[i].name) ?? Fig.ramp(i, data.length)) : Fig.ramp(i, data.length), border: Border.all(color: Fig.neon, width: 1.5)),
+                        decoration: BoxDecoration(color: colorByName ? (Fig.colorFor(data[i].name) ?? Fig.ramp(i, data.length)) : Fig.ramp(i, data.length), borderRadius: const BorderRadius.vertical(top: Radius.circular(3)), border: Border.all(color: Fig.neon.withValues(alpha: 0.7), width: 1)),
                       ),
                     ],
                   ),

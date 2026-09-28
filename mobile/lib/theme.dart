@@ -3,34 +3,36 @@ import 'package:flutter/material.dart';
 /// The look of the Diary_Graphs figures: black paper, a lime frame around every panel,
 /// green bars with lime outlines, white bold titles. Dark only — mirrors the web app's globals.css.
 class Fig {
-  static const paper = Color(0xFF000000);
-  static const surface2 = Color(0xFF0B1A0B);
-  static const neon = Color(0xFF00FF00);
-  static const border = Color(0xFF1E7A1E);   // dim green: inputs, dividers
-  static const ink = Color(0xFFFFFFFF);
-  static const ink2 = Color(0xFFD6D6D6);
-  static const muted = Color(0xFF9B9B9B);
-  static const line = Color(0xFF333333);
-  static const grid = Color(0xFF3D3D3D);
-  static const axis = Color(0xFF8C8C8C);
-  static const fill = Color(0xFF0F8F0F);     // bar fill under a lime outline
-  static const dot = Color(0xFF90EE90);      // scatter dots
-  static const accentSoft = Color(0xFF0B3D0B);
-  static const red = Color(0xFFFF0000);
-  static const gold = Color(0xFFFFD700);
-  static const white = Color(0xFFFFFFFF);
+  static const paper = Color(0xFF0B0E0B);
+  static const surface = Color(0xFF111511);
+  static const surface2 = Color(0xFF182018);
+  static const neon = Color(0xFF4ADE80);     // accent green (softened from the figures' lime)
+  static const frame = Color(0xFF2F5D38);    // muted green: card frames
+  static const border = Color(0xFF2A3D2C);   // inputs, dividers
+  static const ink = Color(0xFFE8EBE6);
+  static const ink2 = Color(0xFFB9C0B6);
+  static const muted = Color(0xFF7F877C);
+  static const line = Color(0xFF263026);
+  static const grid = Color(0xFF263026);
+  static const axis = Color(0xFF4B564A);
+  static const fill = Color(0xFF22753A);     // bar fill under a green outline
+  static const dot = Color(0xFF86EFAC);      // scatter dots
+  static const accentSoft = Color(0xFF163D22);
+  static const red = Color(0xFFEF5350);
+  static const gold = Color(0xFFE5C25A);
+  static const white = Color(0xFFD8DCD4);    // second series (soft white)
 
-  static const radius = 2.0;
-  static const frameWidth = 1.5;
+  static const radius = 8.0;
+  static const frameWidth = 1.0;
 
   /// Rank ramp from the "most-worn brands" figure: the top bars glow lime, the tail fades to forest green.
   static Color ramp(int i, int n) {
     final t = n <= 1 ? 0.0 : (i / (n - 1)).clamp(0.0, 1.0);
-    return Color.lerp(neon, const Color(0xFF0A4A0A), t)!;
+    return Color.lerp(neon, const Color(0xFF1C4A27), t)!;
   }
 
   /// Sequential scale for heatmaps: near-black green → lime.
-  static Color scale(double t) => Color.lerp(const Color(0xFF062006), neon, t.clamp(0.0, 1.0))!;
+  static Color scale(double t) => Color.lerp(const Color(0xFF12301A), neon, t.clamp(0.0, 1.0))!;
 
   /// Black or white text for a background (black on lime/red/white like the calendar figures).
   static Color inkOn(Color c) => c.computeLuminance() > 0.18 ? Colors.black : Colors.white;
@@ -53,10 +55,10 @@ class Fig {
 
   static Color? colorFor(String name) => named[name] ?? named[name.replaceAll(RegExp(r'\s*\(.*\)$'), '')];
 
-  static const frame = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(radius)), side: BorderSide(color: neon, width: frameWidth));
+  static const frameShape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(radius)), side: BorderSide(color: frame, width: frameWidth));
   static const frameDim = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(radius)), side: BorderSide(color: border, width: frameWidth));
 
-  static const tileLabel = TextStyle(color: neon, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.9);
+  static const tileLabel = TextStyle(color: neon, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.8);
   static const tileValue = TextStyle(color: ink, fontSize: 26, fontWeight: FontWeight.w800, height: 1.05, fontFeatures: [FontFeature.tabularFigures()]);
   static const cardTitle = TextStyle(color: ink, fontSize: 15, fontWeight: FontWeight.w800);
   static const cardSub = TextStyle(color: ink2, fontSize: 12);
@@ -70,7 +72,7 @@ ThemeData buildFigTheme() {
   const cs = ColorScheme(
     brightness: Brightness.dark,
     primary: Fig.neon, onPrimary: Colors.black,
-    primaryContainer: Fig.surface2, onPrimaryContainer: Fig.ink,
+    primaryContainer: Fig.accentSoft, onPrimaryContainer: Fig.ink,
     secondary: Fig.neon, onSecondary: Colors.black,
     secondaryContainer: Fig.accentSoft, onSecondaryContainer: Fig.ink,
     tertiary: Fig.gold, onTertiary: Colors.black,
@@ -78,11 +80,11 @@ ThemeData buildFigTheme() {
     error: Fig.red, onError: Colors.black,
     errorContainer: Color(0xFF3A0000), onErrorContainer: Fig.ink,
     surface: Fig.paper, onSurface: Fig.ink,
-    surfaceContainerLowest: Fig.paper, surfaceContainerLow: Fig.paper, surfaceContainer: Fig.surface2,
-    surfaceContainerHigh: Fig.surface2, surfaceContainerHighest: Color(0xFF122412),
+    surfaceContainerLowest: Fig.paper, surfaceContainerLow: Fig.surface, surfaceContainer: Fig.surface2,
+    surfaceContainerHigh: Fig.surface2, surfaceContainerHighest: Color(0xFF1F2A1F),
     onSurfaceVariant: Fig.ink2,
     outline: Fig.border, outlineVariant: Fig.border,
-    inverseSurface: Fig.ink, onInverseSurface: Colors.black, inversePrimary: Color(0xFF0A4A0A),
+    inverseSurface: Fig.ink, onInverseSurface: Fig.paper, inversePrimary: Color(0xFF1C4A27),
     shadow: Colors.black, scrim: Colors.black,
   );
   const shape = RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(Fig.radius)));
@@ -95,11 +97,11 @@ ThemeData buildFigTheme() {
     appBarTheme: const AppBarTheme(
       backgroundColor: Fig.paper, foregroundColor: Fig.ink, elevation: 0, scrolledUnderElevation: 0, centerTitle: false,
       titleTextStyle: TextStyle(color: Fig.ink, fontSize: 20, fontWeight: FontWeight.w800),
-      shape: Border(bottom: BorderSide(color: Fig.neon, width: Fig.frameWidth)),
+      shape: Border(bottom: BorderSide(color: Fig.line, width: 1)),
     ),
-    cardTheme: const CardThemeData(color: Fig.paper, elevation: 0, margin: EdgeInsets.zero, shape: Fig.frame),
+    cardTheme: const CardThemeData(color: Fig.surface, elevation: 0, margin: EdgeInsets.zero, shape: Fig.frameShape),
     inputDecorationTheme: const InputDecorationTheme(
-      isDense: true, filled: true, fillColor: Fig.paper,
+      isDense: true, filled: true, fillColor: Fig.surface,
       hintStyle: TextStyle(color: Fig.muted), helperStyle: TextStyle(color: Fig.muted), labelStyle: TextStyle(color: Fig.ink2), suffixStyle: TextStyle(color: Fig.muted),
       border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(Fig.radius)), borderSide: BorderSide(color: Fig.border, width: Fig.frameWidth)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(Fig.radius)), borderSide: BorderSide(color: Fig.border, width: Fig.frameWidth)),
@@ -107,10 +109,10 @@ ThemeData buildFigTheme() {
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(Fig.radius)), borderSide: BorderSide(color: Fig.red, width: Fig.frameWidth)),
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: Fig.paper, selectedColor: Fig.neon, disabledColor: Fig.paper, checkmarkColor: Colors.black,
-      side: const BorderSide(color: Fig.border, width: Fig.frameWidth), shape: shape,
+      backgroundColor: Fig.surface2, selectedColor: Fig.neon, disabledColor: Fig.surface2, checkmarkColor: Fig.paper,
+      side: BorderSide.none, shape: const StadiumBorder(),
       labelStyle: const TextStyle(color: Fig.ink2, fontSize: 13),
-      secondaryLabelStyle: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w800),
+      secondaryLabelStyle: const TextStyle(color: Fig.paper, fontSize: 13, fontWeight: FontWeight.w700),
       deleteIconColor: Fig.muted, iconTheme: const IconThemeData(color: Fig.ink2, size: 16),
     ),
     segmentedButtonTheme: SegmentedButtonThemeData(
@@ -118,16 +120,16 @@ ThemeData buildFigTheme() {
         shape: const WidgetStatePropertyAll(shape),
         side: const WidgetStatePropertyAll(BorderSide(color: Fig.border, width: Fig.frameWidth)),
         backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Fig.neon : Fig.paper),
-        foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.black : Fig.ink2),
-        textStyle: WidgetStateProperty.resolveWith((s) => TextStyle(fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500)),
+        foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Fig.paper : Fig.ink2),
+        textStyle: WidgetStateProperty.resolveWith((s) => TextStyle(fontWeight: s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: ButtonStyle(
         shape: const WidgetStatePropertyAll(shape),
         backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.disabled) ? Fig.neon.withValues(alpha: 0.35) : Fig.neon),
-        foregroundColor: const WidgetStatePropertyAll(Colors.black),
-        textStyle: const WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w800)),
+        foregroundColor: const WidgetStatePropertyAll(Fig.paper),
+        textStyle: const WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w700)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -135,7 +137,7 @@ ThemeData buildFigTheme() {
         shape: const WidgetStatePropertyAll(shape),
         side: WidgetStateProperty.resolveWith((s) => BorderSide(color: s.contains(WidgetState.focused) ? Fig.neon : Fig.border, width: Fig.frameWidth)),
         foregroundColor: const WidgetStatePropertyAll(Fig.ink),
-        backgroundColor: const WidgetStatePropertyAll(Fig.paper),
+        backgroundColor: const WidgetStatePropertyAll(Fig.surface),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -143,23 +145,23 @@ ThemeData buildFigTheme() {
     ),
     iconButtonTheme: const IconButtonThemeData(style: ButtonStyle(foregroundColor: WidgetStatePropertyAll(Fig.ink))),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: Fig.paper, indicatorColor: Fig.neon, indicatorShape: shape, elevation: 0, height: 64,
-      iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: s.contains(WidgetState.selected) ? Colors.black : Fig.ink2)),
-      labelTextStyle: WidgetStateProperty.resolveWith((s) => TextStyle(color: s.contains(WidgetState.selected) ? Fig.neon : Fig.ink2, fontSize: 12, fontWeight: s.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w500)),
+      backgroundColor: Fig.paper, indicatorColor: Fig.accentSoft, indicatorShape: const StadiumBorder(), elevation: 0, height: 64,
+      iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: s.contains(WidgetState.selected) ? Fig.neon : Fig.ink2)),
+      labelTextStyle: WidgetStateProperty.resolveWith((s) => TextStyle(color: s.contains(WidgetState.selected) ? Fig.neon : Fig.ink2, fontSize: 12, fontWeight: s.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500)),
     ),
     listTileTheme: const ListTileThemeData(textColor: Fig.ink, iconColor: Fig.ink2, subtitleTextStyle: TextStyle(color: Fig.ink2, fontSize: 12)),
-    snackBarTheme: const SnackBarThemeData(backgroundColor: Fig.surface2, contentTextStyle: TextStyle(color: Fig.ink), shape: Fig.frame, behavior: SnackBarBehavior.floating),
-    dialogTheme: const DialogThemeData(backgroundColor: Fig.paper, shape: Fig.frame, titleTextStyle: TextStyle(color: Fig.ink, fontSize: 18, fontWeight: FontWeight.w800), contentTextStyle: TextStyle(color: Fig.ink2, fontSize: 14)),
-    bottomSheetTheme: const BottomSheetThemeData(backgroundColor: Fig.paper, shape: RoundedRectangleBorder(side: BorderSide(color: Fig.neon, width: Fig.frameWidth))),
-    timePickerTheme: const TimePickerThemeData(backgroundColor: Fig.paper, shape: Fig.frame),
-    datePickerTheme: const DatePickerThemeData(backgroundColor: Fig.paper, shape: Fig.frame, headerForegroundColor: Fig.ink),
+    snackBarTheme: const SnackBarThemeData(backgroundColor: Fig.surface2, contentTextStyle: TextStyle(color: Fig.ink), shape: Fig.frameShape, behavior: SnackBarBehavior.floating),
+    dialogTheme: const DialogThemeData(backgroundColor: Fig.surface, shape: Fig.frameShape, titleTextStyle: TextStyle(color: Fig.ink, fontSize: 18, fontWeight: FontWeight.w800), contentTextStyle: TextStyle(color: Fig.ink2, fontSize: 14)),
+    bottomSheetTheme: const BottomSheetThemeData(backgroundColor: Fig.surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16)), side: BorderSide(color: Fig.frame, width: Fig.frameWidth))),
+    timePickerTheme: const TimePickerThemeData(backgroundColor: Fig.surface, shape: Fig.frameShape),
+    datePickerTheme: const DatePickerThemeData(backgroundColor: Fig.surface, shape: Fig.frameShape, headerForegroundColor: Fig.ink),
     switchTheme: SwitchThemeData(
-      thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.black : Fig.ink2),
+      thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Fig.paper : Fig.ink2),
       trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Fig.neon : Fig.paper),
       trackOutlineColor: const WidgetStatePropertyAll(Fig.border),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(color: Fig.neon),
-    tooltipTheme: const TooltipThemeData(decoration: BoxDecoration(color: Fig.paper, border: Border.fromBorderSide(BorderSide(color: Fig.neon, width: Fig.frameWidth))), textStyle: TextStyle(color: Fig.ink, fontSize: 12)),
+    tooltipTheme: const TooltipThemeData(decoration: BoxDecoration(color: Fig.surface2, borderRadius: BorderRadius.all(Radius.circular(6)), border: Border.fromBorderSide(BorderSide(color: Fig.frame, width: Fig.frameWidth))), textStyle: TextStyle(color: Fig.ink, fontSize: 12)),
     splashFactory: InkSparkle.splashFactory,
   );
 }
@@ -224,7 +226,7 @@ class FigHeading extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(2, 8, 2, 10),
         child: Row(children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(color: Fig.neon, border: Border.all(color: Colors.black), boxShadow: const [BoxShadow(color: Fig.neon, spreadRadius: 1.5)])),
+          Container(width: 10, height: 10, decoration: BoxDecoration(color: Fig.neon, borderRadius: BorderRadius.circular(2))),
           const SizedBox(width: 10),
           Text(text, style: const TextStyle(color: Fig.ink, fontSize: 17, fontWeight: FontWeight.w800)),
         ]),
@@ -239,12 +241,12 @@ class FigLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(color: Fig.paper, border: Border.all(color: Fig.neon, width: Fig.frameWidth)),
+        decoration: BoxDecoration(color: Fig.surface, borderRadius: BorderRadius.circular(Fig.radius), border: Border.all(color: Fig.frame, width: Fig.frameWidth)),
         child: Wrap(spacing: 12, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
           if (title != null) Text(title!, style: const TextStyle(color: Fig.ink, fontSize: 12, fontWeight: FontWeight.w800)),
           for (final i in items)
             Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 12, height: 12, decoration: BoxDecoration(color: i.$2, border: Border.all(color: Fig.neon, width: 1.5))),
+              Container(width: 12, height: 12, decoration: BoxDecoration(color: i.$2, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 5),
               Text(i.$1, style: Fig.small),
             ]),

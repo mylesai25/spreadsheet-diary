@@ -209,8 +209,9 @@ class _LogScreenState extends State<LogScreen> {
                               padding: const EdgeInsets.only(right: 6),
                               child: ActionChip(
                                 label: Text('${s.icon} ${s.title}'),
-                                backgroundColor: Fig.paper,
-                                side: const BorderSide(color: Fig.border, width: Fig.frameWidth),
+                                backgroundColor: Fig.surface2,
+                                side: BorderSide.none,
+                                shape: const StadiumBorder(),
                                 visualDensity: VisualDensity.compact,
                                 onPressed: () {
                                   final ctx = _sectionKeys[s.id]?.currentContext;
@@ -233,7 +234,7 @@ class _LogScreenState extends State<LogScreen> {
       bottomNavigationBar: _data == null
           ? null
           : Container(
-              decoration: const BoxDecoration(color: Fig.paper, border: Border(top: BorderSide(color: Fig.neon, width: Fig.frameWidth))),
+              decoration: const BoxDecoration(color: Fig.paper, border: Border(top: BorderSide(color: Fig.line, width: 1))),
               child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -398,7 +399,7 @@ class _OutfitIdeas extends StatelessWidget {
                   return Container(
                     width: 260,
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: Fig.paper, borderRadius: BorderRadius.circular(Fig.radius), border: Border.all(color: Fig.neon, width: Fig.frameWidth)),
+                    decoration: BoxDecoration(color: Fig.surface, borderRadius: BorderRadius.circular(Fig.radius), border: Border.all(color: Fig.frame, width: Fig.frameWidth)),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -418,7 +419,7 @@ class _OutfitIdeas extends StatelessWidget {
                                       TextSpan(text: '${_slotIcon[p.slot] ?? ''} '),
                                       TextSpan(text: '#${p.id} ', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800)),
                                       TextSpan(text: p.label),
-                                      if (p.isNew) const TextSpan(text: '  NEW', style: TextStyle(color: Colors.black, backgroundColor: Fig.neon, fontWeight: FontWeight.w800, fontSize: 10)),
+                                      if (p.isNew) const TextSpan(text: '  NEW', style: TextStyle(color: Fig.neon, fontWeight: FontWeight.w800, fontSize: 10)),
                                     ])),
                                   ),
                                 ),

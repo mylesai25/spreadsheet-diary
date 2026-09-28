@@ -12,7 +12,7 @@ export function OutfitSuggestionsPanel({ data, busy, onRefresh, onWear }: { data
   const w = data.weather;
   const desc = w.feelsLike != null ? `feels like ${Math.round(w.feelsLike)}°${w.sky ? ` · ${w.sky}` : ""}` : "no weather yet";
   return (
-    <div className="mb-3 rounded-[2px] border-[1.5px] border-border bg-surface-2/60 p-3">
+    <div className="mb-3 rounded-lg border border-border bg-surface-2/60 p-3">
       <div className="flex items-center gap-2">
         <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setOpen((o) => !o)}>
           <span aria-hidden>✨</span>
@@ -55,7 +55,7 @@ export function OutfitSuggestionsPanel({ data, busy, onRefresh, onWear }: { data
 
 function OutfitCard({ o, onWear }: { o: OutfitSuggestion; onWear: () => void }) {
   return (
-    <div className="flex flex-col rounded-[2px] border-[1.5px] border-neon bg-black p-3">
+    <div className="flex flex-col rounded-lg border border-frame bg-surface p-3">
       <div className="text-sm font-bold">{o.title}</div>
       <div className="mb-2 text-xs text-muted">{o.tagline}</div>
       <ul className="flex-1 space-y-1">
@@ -63,7 +63,7 @@ function OutfitCard({ o, onWear }: { o: OutfitSuggestion; onWear: () => void }) 
           <li key={p.slot} className="text-sm" title={p.why}>
             <span aria-hidden className="mr-1">{SLOT_ICON[p.slot]}</span>
             <span className="font-mono text-xs text-accent">#{p.id}</span> {p.label}
-            {p.isNew && <span className="ml-1 rounded-[2px] bg-neon px-1 text-[10px] font-bold uppercase text-black">new</span>}
+            {p.isNew && <span className="ml-1 rounded bg-accent-soft px-1 text-[10px] font-bold uppercase text-neon">new</span>}
             <div className="pl-6 text-[11px] text-muted">{p.why}</div>
           </li>
         ))}

@@ -18,8 +18,8 @@ export const NAMED_COLORS: Record<string, string> = {
 };
 
 /** The figures' ink: lime frames/outlines, black paper, white type. */
-export const NEON = "#00ff00";
-export const PAPER = "#000000";
+export const NEON = "#4ade80";
+export const PAPER = "#0b0e0b";
 
 export function colorFor(name: string, fallback = "#8a8a8a"): string {
   return NAMED_COLORS[name] ?? NAMED_COLORS[name.replace(/\s*\(.*\)$/, "")] ?? fallback;
@@ -40,16 +40,16 @@ export function inkOn(hex: string): string {
  */
 export function greenRamp(i: number, n: number): string {
   const t = n <= 1 ? 0 : Math.min(1, Math.max(0, i / (n - 1)));
-  const from = [0, 255, 0], to = [10, 74, 10];
+  const from = [74, 222, 128], to = [28, 74, 39];
   return `rgb(${from.map((c, k) => Math.round(c + (to[k] - c) * t)).join(",")})`;
 }
 
 /** Sequential scale for heatmaps: near-black green → lime. */
 export function greenScale(t: number): string {
   const x = Math.min(1, Math.max(0, t));
-  const from = [6, 32, 6], to = [0, 255, 0];
+  const from = [18, 48, 26], to = [74, 222, 128];
   return `rgb(${from.map((c, k) => Math.round(c + (to[k] - c) * x)).join(",")})`;
 }
 
 /** Calendar palette for TRUE/FALSE habit views (notebook: neon green / red). */
-export const BOOL_PALETTE: Record<string, string> = { TRUE: "#00ff00", FALSE: "#ff0000" };
+export const BOOL_PALETTE: Record<string, string> = { TRUE: "#4ade80", FALSE: "#ef5350" };

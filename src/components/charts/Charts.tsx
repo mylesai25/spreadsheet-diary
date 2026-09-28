@@ -11,13 +11,13 @@ import { colorFor, greenRamp, NEON } from "@/lib/colors";
 /* ── Figure vocabulary (from the Diary_Graphs notebook): lime lines, white as the second series,
       green bar fills with lime outlines, gray grid, white bold labels. ── */
 export const S = ["var(--series-1)", "var(--series-2)", "var(--series-3)", "var(--series-4)"];
-export const BAR_FILL = ["var(--viz-fill)", "#ffffff", "#7fff7f", "#ffd700"];
-export const BAR_STROKE = [NEON, "#ffffff", "#7fff7f", "#ffd700"];
+export const BAR_FILL = ["var(--viz-fill)", "#d8dcd4", "#86efac", "#e5c25a"];
+export const BAR_STROKE = [NEON, "#d8dcd4", "#86efac", "#e5c25a"];
 export const axis = { stroke: "var(--viz-axis)", tick: { fill: "var(--viz-muted)", fontSize: 11 }, tickLine: false, axisLine: { stroke: "var(--viz-axis)" } } as const;
 export const grid = <CartesianGrid vertical={false} stroke="var(--viz-grid)" strokeDasharray="0" />;
 export const legendStyle = { fontSize: 12, color: "var(--ink)" } as const;
 export const labelStyle = { fill: "var(--ink)", fontSize: 12, fontWeight: 700 } as const;
-export const tipBox = "border-[1.5px] border-neon bg-black px-3 py-2 text-sm text-ink shadow-[0_8px_24px_rgba(0,255,0,0.15)]";
+export const tipBox = "border border-frame bg-surface px-3 py-2 text-sm text-ink rounded-md shadow-[0_8px_24px_rgba(0,0,0,0.45)]";
 
 export function Tip({ active, payload, label, fmt, title }: { active?: boolean; payload?: { name: string; value: number | string; color?: string; dataKey?: string }[]; label?: string; fmt?: (v: number) => string; title?: (l: string) => string }) {
   if (!active || !payload?.length) return null;
@@ -26,7 +26,7 @@ export function Tip({ active, payload, label, fmt, title }: { active?: boolean; 
       <div className="mb-1 text-xs text-muted">{title ? title(String(label)) : label}</div>
       {payload.filter((p) => p.value != null && p.value !== "").map((p) => (
         <div key={String(p.dataKey ?? p.name)} className="flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 border border-black" style={{ background: p.color, outline: `1px solid ${p.color}` }} />
+          <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: p.color }} />
           <span className="text-ink-2">{p.name}</span>
           <span className="ml-auto font-bold tabular-nums">{typeof p.value === "number" ? (fmt ? fmt(p.value) : p.value) : p.value}</span>
         </div>
@@ -112,10 +112,10 @@ export function TimeLines({ data, keys, names, unit, domain, height = 220, area,
           area && i === 0 ? (
             <Area isAnimationActive={false} key={k} type="monotone" dataKey={k} name={names[i]} stroke={S[i]} fill={S[i]} fillOpacity={0.18} strokeWidth={2} dot={false} connectNulls />
           ) : (
-            <Line isAnimationActive={false} key={k} type="monotone" dataKey={k} name={names[i]} stroke={S[i]} strokeWidth={2} dot={dense ? false : { r: 3, strokeWidth: 0, fill: S[i] }} activeDot={{ r: 5, stroke: "#000" }} connectNulls />
+            <Line isAnimationActive={false} key={k} type="monotone" dataKey={k} name={names[i]} stroke={S[i]} strokeWidth={2} dot={dense ? false : { r: 3, strokeWidth: 0, fill: S[i] }} activeDot={{ r: 5, stroke: "var(--surface)" }} connectNulls />
           ),
         )}
-        {avgKey && <Line isAnimationActive={false} type="monotone" dataKey={avgKey} name={avgName ?? "7-day avg"} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />}
+        {avgKey && <Line isAnimationActive={false} type="monotone" dataKey={avgKey} name={avgName ?? "7-day avg"} stroke="#d8dcd4" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />}
       </ComposedChart>
     </ResponsiveContainer>
   );
@@ -135,7 +135,7 @@ export function DayBars({ data, dataKey, name, avgKey, height = 220 }: { data: D
         <YAxis {...axis} width={56} tickFormatter={fmtInt} />
         <Tooltip content={<Tip title={(l) => formatShortDate(fromTs(Number(l)))} fmt={fmtInt} />} cursor={{ fill: "var(--surface-2)" }} />
         <Bar isAnimationActive={false} dataKey={dataKey} name={name} fill={BAR_FILL[0]} stroke={NEON} strokeWidth={1} maxBarSize={28} />
-        {avgKey && <Line isAnimationActive={false} type="monotone" dataKey={avgKey} name="7-day avg" stroke="#ffffff" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />}
+        {avgKey && <Line isAnimationActive={false} type="monotone" dataKey={avgKey} name="7-day avg" stroke="#d8dcd4" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />}
         {avgKey && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />}
       </ComposedChart>
     </ResponsiveContainer>
@@ -153,8 +153,8 @@ export function WeekBars({ data, keys, names, height = 220, refLine }: { data: W
         <YAxis {...axis} width={Math.max(...data.flatMap((d) => keys.map((k) => Number(d[k]) || 0))) >= 1000 ? 56 : 40} allowDecimals={false} tickFormatter={(v) => Number(v).toLocaleString("en-US")} />
         <Tooltip content={<Tip title={(l) => `Week of ${l}`} />} cursor={{ fill: "var(--surface-2)" }} />
         {keys.length > 1 && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />}
-        {refLine != null && <ReferenceLine y={refLine} stroke="#ffffff" strokeDasharray="4 3" />}
-        {keys.map((k, i) => <Bar isAnimationActive={false} key={k} dataKey={k} name={names[i]} fill={BAR_FILL[i]} stroke={BAR_STROKE[i]} strokeWidth={1.5} maxBarSize={32} />)}
+        {refLine != null && <ReferenceLine y={refLine} stroke="#d8dcd4" strokeDasharray="4 3" />}
+        {keys.map((k, i) => <Bar isAnimationActive={false} key={k} dataKey={k} name={names[i]} fill={BAR_FILL[i]} stroke={BAR_STROKE[i]} strokeWidth={1} maxBarSize={32} />)}
       </BarChart>
     </ResponsiveContainer>
   );
@@ -174,7 +174,7 @@ export function RankBars({ data, colorByName, unit, height, max, labelWidth = 12
         <XAxis type="number" hide domain={[0, max ?? "auto"]} />
         <YAxis type="category" dataKey="name" {...axis} axisLine={false} width={labelWidth} tick={{ fill: "var(--ink)", fontSize: 12 }} interval={0} tickFormatter={(v: string) => { const n = Math.floor(labelWidth / 7); return v.length > n ? v.slice(0, n - 1) + "…" : v; }} />
         <Tooltip content={<Tip />} cursor={{ fill: "var(--surface-2)" }} />
-        <Bar isAnimationActive={false} dataKey="value" name={unit ?? "Days"} stroke={NEON} strokeWidth={1.5} maxBarSize={20}>
+        <Bar isAnimationActive={false} dataKey="value" name={unit ?? "Days"} stroke={NEON} strokeWidth={1} maxBarSize={20}>
           {data.map((d, i) => <Cell key={d.name} fill={colorByName ? colorFor(d.name, greenRamp(i, n)) : greenRamp(i, n)} />)}
           <LabelList dataKey="value" position="right" style={labelStyle} />
         </Bar>
@@ -206,7 +206,7 @@ export function VerticalBars({ data, unit, height = 280, colorByName, asPercentO
             <b>{payload[0].payload.raw.toLocaleString("en-US")}</b> {(unit ?? "days").toLowerCase()}{asPercentOf ? ` · ${payload[0].value}%` : ""}
           </div>
         ) : null} />
-        <Bar isAnimationActive={false} dataKey="value" name={unit ?? "Days"} stroke={NEON} strokeWidth={1.5} maxBarSize={56}>
+        <Bar isAnimationActive={false} dataKey="value" name={unit ?? "Days"} stroke={NEON} strokeWidth={1} maxBarSize={56}>
           {rows.map((d, i) => <Cell key={d.name} fill={colorByName ? colorFor(d.name, greenRamp(i, n)) : greenRamp(i, n)} />)}
           <LabelList dataKey="value" position="top" style={labelStyle} formatter={label} />
         </Bar>
@@ -227,8 +227,8 @@ export function GolfChart({ data, height = 220 }: { data: GolfRound[]; height?: 
         <Tooltip content={<Tip title={(l) => { const iso = fromTs(Number(l)); const r = data.find((x) => x.date === iso); return r ? `${formatShortDate(iso)} · ${r.course} (${r.score})` : iso; }} />} cursor={{ stroke: "var(--viz-axis)" }} />
         <ReferenceLine y={0} stroke="var(--viz-muted)" strokeDasharray="3 3" label={{ value: "par", position: "insideTopRight", fill: "var(--viz-muted)", fontSize: 11 }} />
         <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />
-        <Line isAnimationActive={false} type="monotone" dataKey="toPar" name="Score to par" stroke={S[0]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[0] }} activeDot={{ r: 5, stroke: "#000" }} />
-        <Line isAnimationActive={false} type="monotone" dataKey="putts" name="Putts" stroke={S[1]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[1] }} activeDot={{ r: 5, stroke: "#000" }} connectNulls />
+        <Line isAnimationActive={false} type="monotone" dataKey="toPar" name="Score to par" stroke={S[0]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[0] }} activeDot={{ r: 5, stroke: "var(--surface)" }} />
+        <Line isAnimationActive={false} type="monotone" dataKey="putts" name="Putts" stroke={S[1]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[1] }} activeDot={{ r: 5, stroke: "var(--surface)" }} connectNulls />
       </LineChart>
     </ResponsiveContainer>
   );

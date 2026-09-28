@@ -67,7 +67,7 @@ class _ShellState extends State<Shell> {
     return Scaffold(
       body: IndexedStack(index: _tab, children: pages),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(border: Border(top: BorderSide(color: Fig.neon, width: Fig.frameWidth))),
+        decoration: const BoxDecoration(border: Border(top: BorderSide(color: Fig.line, width: 1))),
         child: NavigationBar(
           selectedIndex: _tab,
           onDestinationSelected: (i) => setState(() => _tab = i),

@@ -7,7 +7,7 @@ import { axis, Empty, legendStyle, tipBox } from "./Charts";
 
 /* This year is lime, the prior year is white — the heart-rate figure's two-series pairing. */
 const A = "var(--series-1)", B = "var(--series-2)";
-const A_FILL = "var(--viz-fill)", B_FILL = "#ffffff";
+const A_FILL = "var(--viz-fill)", B_FILL = "#d8dcd4";
 const fmt = (v: number | null, d = 1) => (v == null ? "—" : v.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: 0 }));
 
 /* ───────────── Headline tiles with delta ───────────── */
@@ -52,12 +52,12 @@ export function MonthCompare({ data, yearA, yearB, unit, height = 220 }: { data:
         <Tooltip cursor={{ fill: "var(--surface-2)" }} content={({ active, payload, label }) => active && payload?.length ? (
           <div className={tipBox}>
             <div className="mb-1 text-xs text-muted">{label}</div>
-            {payload.map((p) => <div key={String(p.dataKey)} className="flex items-center gap-2"><span className="h-2.5 w-2.5 border border-black" style={{ background: p.color, outline: `1px solid ${p.color}` }} /><span className="text-ink-2">{p.name}</span><span className="ml-auto font-bold tabular-nums">{fmt(p.value as number)}{unit ?? ""}</span></div>)}
+            {payload.map((p) => <div key={String(p.dataKey)} className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: p.color }} /><span className="text-ink-2">{p.name}</span><span className="ml-auto font-bold tabular-nums">{fmt(p.value as number)}{unit ?? ""}</span></div>)}
           </div>
         ) : null} />
         <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />
-        <Bar isAnimationActive={false} dataKey="b" name={String(yearB)} fill={B_FILL} stroke={B} strokeWidth={1.5} maxBarSize={22} />
-        <Bar isAnimationActive={false} dataKey="a" name={String(yearA)} fill={A_FILL} stroke={NEON} strokeWidth={1.5} maxBarSize={22} />
+        <Bar isAnimationActive={false} dataKey="b" name={String(yearB)} fill={B_FILL} stroke={B} strokeWidth={1} maxBarSize={22} />
+        <Bar isAnimationActive={false} dataKey="a" name={String(yearA)} fill={A_FILL} stroke={NEON} strokeWidth={1} maxBarSize={22} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -82,7 +82,7 @@ export function CumulativeRace({ data, yearA, yearB, unit, height = 220 }: { dat
         <Tooltip cursor={{ stroke: "var(--viz-axis)" }} content={({ active, payload, label }) => active && payload?.length ? (
           <div className={tipBox}>
             <div className="mb-1 text-xs text-muted">{doyLabel(Number(label))}</div>
-            {payload.filter((p) => p.value != null).map((p) => <div key={String(p.dataKey)} className="flex items-center gap-2"><span className="h-2.5 w-2.5 border border-black" style={{ background: p.color, outline: `1px solid ${p.color}` }} /><span className="text-ink-2">{p.name}</span><span className="ml-auto font-bold tabular-nums">{fmt(p.value as number)}{unit ?? ""}</span></div>)}
+            {payload.filter((p) => p.value != null).map((p) => <div key={String(p.dataKey)} className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: p.color }} /><span className="text-ink-2">{p.name}</span><span className="ml-auto font-bold tabular-nums">{fmt(p.value as number)}{unit ?? ""}</span></div>)}
           </div>
         ) : null} />
         <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />

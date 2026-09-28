@@ -15,7 +15,7 @@ import { axis, Empty, labelStyle, RankBars, tipBox } from "./Charts";
 
 const SKY_PALETTE: Record<string, string> = {
   Sunny: "#ffd700", "Partly Sunny": "#f0c454", "Partly Cloudy": "#9ab0c8", Cloudy: "#6b7b8c", Rain: "#2a78d6", Snow: "#e6f0fa",
-  Windy: "#00ff00", Fog: "#a8a8a8", Haze: "#c9bfa0", Sleet: "#7fa8d6", Hail: "#4a3aa7",
+  Windy: "#4ade80", Fog: "#a8a8a8", Haze: "#c9bfa0", Sleet: "#7fa8d6", Hail: "#4a3aa7",
 };
 
 function paletteFor(view: CalendarView): Record<string, string> {
@@ -76,8 +76,8 @@ function MonthGrid({ year, month, values, palette }: { year: number; month: numb
   return (
     <div>
       <div className="mb-1 text-center text-sm font-bold">{name}</div>
-      <div className="border-[1.5px] border-neon bg-black p-[2px]">
-        <div className="grid grid-cols-7 gap-[2px]">
+      <div className="rounded-md border border-frame bg-surface p-[3px]">
+        <div className="grid grid-cols-7 gap-[3px]">
           {cells.map((d, i) => {
             if (d == null) return <div key={i} />;
             const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -85,7 +85,7 @@ function MonthGrid({ year, month, values, palette }: { year: number; month: numb
             const bg = v ? palette[v] ?? "#8a8a8a" : undefined;
             return (
               <div key={i} title={v ? `${formatShortDate(iso)}: ${v}` : formatShortDate(iso)}
-                className={`grid aspect-square place-items-center text-[10px] font-semibold leading-none ${v ? "" : "border border-border text-muted"}`}
+                className={`grid aspect-square place-items-center rounded-[3px] text-[10px] font-semibold leading-none ${v ? "" : "border border-border text-muted"}`}
                 style={v ? { background: bg, color: inkOn(bg!) } : undefined}>
                 {d}
               </div>
@@ -117,8 +117,8 @@ export function Histogram({ data, target, height = 220 }: { data: { bin: string;
         <Tooltip cursor={{ fill: "var(--surface-2)" }} content={({ active, payload, label }) => active && payload?.length ? (
           <div className={tipBox}><span className="text-ink-2">{label} slept</span> <span className="ml-2 font-bold">{payload[0].value} nights</span></div>
         ) : null} />
-        {target && <ReferenceLine x={target} stroke="#ffffff" strokeDasharray="5 3" />}
-        <Bar isAnimationActive={false} dataKey="days" name="Nights" fill="var(--viz-fill)" stroke={NEON} strokeWidth={1.5} maxBarSize={40}>
+        {target && <ReferenceLine x={target} stroke="#d8dcd4" strokeDasharray="5 3" />}
+        <Bar isAnimationActive={false} dataKey="days" name="Nights" fill="var(--viz-fill)" stroke={NEON} strokeWidth={1} maxBarSize={40}>
           <LabelList dataKey="days" position="top" style={{ ...labelStyle, fontSize: 11 }} formatter={(v: unknown) => (Number(v) ? String(v) : "")} />
         </Bar>
       </BarChart>
@@ -136,7 +136,7 @@ export function ScatterFit({ data, fit, xLabel, yLabel, height = 240 }: { data: 
   return (
     <div className="relative">
       {fit && (
-        <div className="absolute bottom-8 right-3 z-10 border border-neon bg-[var(--viz-dot)] px-2 py-0.5 text-xs font-semibold text-black">
+        <div className="absolute bottom-8 right-3 z-10 rounded-md bg-[var(--viz-dot)] px-2 py-0.5 text-xs font-semibold text-black">
           Correlation (r) = {fit.r.toFixed(2)} · n = {fit.n}
         </div>
       )}
@@ -151,7 +151,7 @@ export function ScatterFit({ data, fit, xLabel, yLabel, height = 240 }: { data: 
             return active && p?.date ? <div className={tipBox}><div className="text-xs text-muted">{formatShortDate(p.date)}</div>{xLabel}: <b>{p.x.toLocaleString("en-US")}</b> · {yLabel}: <b>{p.y}</b></div> : null;
           }} />
           <Scatter isAnimationActive={false} data={data} fill="var(--viz-dot)" fillOpacity={0.8} stroke="var(--viz-dot)" />
-          {fit && <Line isAnimationActive={false} dataKey="y" stroke="#ffffff" strokeWidth={2} dot={false} activeDot={false} />}
+          {fit && <Line isAnimationActive={false} dataKey="y" stroke="#d8dcd4" strokeWidth={2} dot={false} activeDot={false} />}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -167,14 +167,14 @@ export function Dumbbell({ data }: { data: HrMonth[] }) {
   const W = 100; // percent-based
   const px = (v: number) => ((v - lo) / (hi - lo)) * W;
   const ticks = Array.from({ length: (hi - lo) / 10 + 1 }, (_, i) => lo + i * 10);
-  const dot = "absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black";
+  const dot = "absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface";
   return (
     <div className="text-xs">
       <div className="mb-3 flex items-center gap-3">
         <div className="legend-box">
           <span className="font-bold">Heart Rate Type</span>
           <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full" style={{ background: NEON }} /> Peak</span>
-          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-white" /> Resting</span>
+          <span className="inline-flex items-center gap-1.5"><span className="inline-block h-3 w-3 rounded-full bg-[#d8dcd4]" /> Resting</span>
         </div>
         <span className="ml-auto text-muted">monthly average bpm</span>
       </div>
@@ -185,7 +185,7 @@ export function Dumbbell({ data }: { data: HrMonth[] }) {
             <div className="relative mx-2 h-4">
               <div className="absolute inset-y-0 left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-[var(--viz-grid)]" />
               {d.resting != null && d.peak != null && <div className="absolute top-1/2 h-[3px] -translate-y-1/2 bg-[#3f4f4f]" style={{ left: `${px(d.resting)}%`, width: `${px(d.peak) - px(d.resting)}%` }} />}
-              {d.resting != null && <span title={`Resting ${d.resting}`} className={`${dot} bg-white`} style={{ left: `${px(d.resting)}%` }} />}
+              {d.resting != null && <span title={`Resting ${d.resting}`} className={`${dot} bg-[#d8dcd4]`} style={{ left: `${px(d.resting)}%` }} />}
               {d.peak != null && <span title={`Peak ${d.peak}`} className={dot} style={{ left: `${px(d.peak)}%`, background: NEON }} />}
             </div>
             <div className="text-right tabular-nums text-ink-2">{d.resting != null ? Math.round(d.resting) : "—"} → {d.peak != null ? Math.round(d.peak) : "—"}</div>
@@ -219,7 +219,7 @@ export function Heatmap({ data, unit = "days" }: { data: Heat; unit?: string }) 
                   const t = v / max;
                   return (
                     <td key={j} title={`${r} · ${data.cols[j]}: ${v} ${unit}`} className="h-7 w-16 text-center font-bold tabular-nums"
-                      style={{ background: v ? greenScale(0.12 + t * 0.88) : "#000", color: v ? inkOn(greenScale(0.12 + t * 0.88)) : "var(--muted)", border: v ? "1px solid #0a3a0a" : "1px solid #101010" }}>
+                      style={{ background: v ? greenScale(0.12 + t * 0.88) : "var(--surface-2)", color: v ? inkOn(greenScale(0.12 + t * 0.88)) : "var(--muted)", borderRadius: 4 }}>
                       {v || ""}
                     </td>
                   );
@@ -233,7 +233,7 @@ export function Heatmap({ data, unit = "days" }: { data: Heat; unit?: string }) 
         <span className="font-bold">{unit[0].toUpperCase() + unit.slice(1)}</span>
         <div className="flex items-center gap-1.5 sm:flex-col sm:items-start">
           <span className="text-ink-2">{max}</span>
-          <div className="h-3 w-24 border border-neon sm:h-24 sm:w-3" style={{ background: `linear-gradient(to right, ${greenScale(0.12)}, ${greenScale(1)})` }} />
+          <div className="h-3 w-24 rounded-sm sm:h-24 sm:w-3" style={{ background: `linear-gradient(to right, ${greenScale(0.12)}, ${greenScale(1)})` }} />
           <span className="text-ink-2">1</span>
         </div>
       </div>
@@ -254,7 +254,7 @@ export function FriendBars({ data }: { data: { name: string; days: number; avgFu
         <Tooltip cursor={{ fill: "var(--surface-2)" }} content={({ active, payload }) => active && payload?.length ? (
           <div className={tipBox}><b>{payload[0].payload.name}</b><div className="text-ink-2">{payload[0].payload.days} days together · fun {payload[0].payload.avgFun}/10</div></div>
         ) : null} />
-        <Bar isAnimationActive={false} dataKey="avgFun" name="Avg fun" stroke={NEON} strokeWidth={1.5} maxBarSize={20}>
+        <Bar isAnimationActive={false} dataKey="avgFun" name="Avg fun" stroke={NEON} strokeWidth={1} maxBarSize={20}>
           {data.map((d, i) => <Cell key={d.name} fill={greenRamp(i, n)} />)}
           <LabelList dataKey="avgFun" position="right" style={labelStyle} formatter={(v: unknown) => `${v}`} />
         </Bar>
@@ -276,7 +276,7 @@ export function RankList({ data, unit = "days" }: { data: Count[]; unit?: string
             <span className="min-w-0 truncate"><span className="mr-2 text-xs font-bold text-neon">{i + 1}.</span>{d.name}</span>
             <span className="shrink-0 text-xs font-bold tabular-nums">{d.value} {unit}</span>
           </div>
-          <div className="mt-1 h-2 w-full border border-border bg-black"><div className="h-full" style={{ width: `${(d.value / max) * 100}%`, background: greenRamp(i, data.length) }} /></div>
+          <div className="mt-1 h-2 w-full rounded-full bg-surface-2"><div className="h-full rounded-full" style={{ width: `${(d.value / max) * 100}%`, background: greenRamp(i, data.length) }} /></div>
         </li>
       ))}
     </ol>
