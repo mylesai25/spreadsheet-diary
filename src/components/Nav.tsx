@@ -8,6 +8,7 @@ const primary = [
   { href: "/", label: "Dashboard" },
   { href: "/log", label: "Log today" },
   { href: "/insights", label: "Insights" },
+  { href: "/friends", label: "Friends" },
   { href: "/compare", label: "Compare" },
 ];
 

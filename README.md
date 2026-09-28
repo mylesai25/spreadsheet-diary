@@ -25,6 +25,11 @@ It reads and writes the Google Sheet directly — the sheet stays the source of 
   (shirt color / shade, pants, went outside, gym, cooked, alcohol, sick, sky), shades of green worn, most-worn
   brands, favorite outfits, sleep histogram, calories-vs-fun with correlation, monthly resting→peak heart rate,
   fun-with-friends, food top-lists, candy-by-season heatmap, hours by sport, transit, states, golf/climb/ski breakdowns.
+- **Friends** (`/friends`) — the friend-stats CSV, live: a leaderboard of everyone logged under *People seen in person*
+  (days, share of days, fun meter and its lift vs. days apart, top sport/sky/weekday, drinks, golf rounds and wins, meals out,
+  last seen) plus a per-friend profile picked from the table or a dropdown: tiles, days-together by month, weekday split,
+  sports, sky, cities, who else was there, restaurants, video games, what you wear around them, a day-in-numbers panel,
+  a calendar of this year's days together and days per year across journals.
 - **Compare** (`/compare`) — this year vs. 2025 (or 2024): headline tiles with deltas, month-by-month grouped bars,
   cumulative "race" lines by day of year, and then-vs-now ranked tables (people, cities, shirt colors, restaurants…).
   "Same period" trims the prior year to Jan 1 → today's date for a fair comparison. Prior-year sheets are read-only.

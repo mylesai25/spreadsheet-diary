@@ -28,11 +28,11 @@ function paletteFor(view: CalendarView): Record<string, string> {
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function YearCalendar({ views, year }: { views: CalendarView[]; year: string }) {
+export function YearCalendar({ views, year, palette: override, emptyLabel = "not logged" }: { views: CalendarView[]; year: string; palette?: Record<string, string>; emptyLabel?: string }) {
   const [key, setKey] = useState(views[0]?.key);
   const view = views.find((v) => v.key === key) ?? views[0];
   if (!view) return <Empty />;
-  const palette = paletteFor(view);
+  const palette = override ?? paletteFor(view);
   const counts = new Map<string, number>();
   for (const v of Object.values(view.values)) counts.set(v, (counts.get(v) ?? 0) + 1);
   const legend = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
@@ -40,11 +40,11 @@ export function YearCalendar({ views, year }: { views: CalendarView[]; year: str
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      {views.length > 1 && <div className="mb-4 flex flex-wrap gap-1.5">
         {views.map((v) => (
           <button key={v.key} type="button" className="tab" aria-pressed={v.key === view.key} onClick={() => setKey(v.key)}>{v.title}</button>
         ))}
-      </div>
+      </div>}
       <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: 12 }, (_, m) => (
           <MonthGrid key={m} year={y} month={m} values={view.values} palette={palette} />
@@ -59,7 +59,7 @@ export function YearCalendar({ views, year }: { views: CalendarView[]; year: str
               {view.kind === "bool" ? (v === "TRUE" ? "TRUE" : "FALSE") : v} <span className="text-muted">{n}</span>
             </span>
           ))}
-          <span className="inline-flex items-center gap-1.5"><span className="swatch" style={{ borderColor: "var(--border)" }} /> not logged</span>
+          <span className="inline-flex items-center gap-1.5"><span className="swatch" style={{ borderColor: "var(--border)" }} /> {emptyLabel}</span>
         </div>
       </div>
     </div>
