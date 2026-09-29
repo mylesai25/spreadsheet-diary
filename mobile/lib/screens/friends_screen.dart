@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -179,7 +180,8 @@ class _Profile extends StatelessWidget {
       FigCard(title: 'Sky', sub: 'Weather on days together', child: RankBars(f.skies)),
       FigCard(title: 'Where we were', sub: 'Cities visited that day', child: RankBars(f.cities)),
       FigCard(title: 'Also there', sub: 'People seen the same days', child: RankBars(f.companions)),
-      FigCard(title: 'Restaurants', sub: 'Where I ate on days together', child: RankBars(f.restaurants, labelWidth: 120)),
+      FigCard(title: 'Restaurants together', sub: 'From the Restaurant sheet · ${f.mealsOut} meal${f.mealsOut == 1 ? '' : 's'}${f.foodRating == null ? '' : ' · food ${f.foodRating}/10'}', child: RankBars(f.restaurants, labelWidth: 120)),
+      if (f.restaurantTypes.isNotEmpty) FigCard(title: 'Cuisines together', sub: 'Restaurant type', child: RankBars(f.restaurantTypes)),
       if (f.videoGames.isNotEmpty) FigCard(title: 'Video games', sub: 'Played on days together', child: RankBars(f.videoGames, labelWidth: 120)),
       FigCard(
         title: 'What I wear around ${f.name}',
@@ -212,8 +214,77 @@ class _Profile extends StatelessWidget {
           _kv('Climbing', f.climbs == 0 ? '—' : '${f.climbs} sessions'),
         ]),
       ),
+      if (f.golf.rounds > 0) ..._golf(f),
       FigCard(title: 'By year', sub: 'Days together, all journals', child: RankBars(f.byYear, labelWidth: 48)),
     ]);
+  }
+
+  static String _hrs(int m) => '${(m / 60).toStringAsFixed(1)} h';
+
+  /// The notebook's "Friendship Golf" block.
+  List<Widget> _golf(FriendProfile f) {
+    final g = f.golf;
+    final sc = g.scramble;
+    String d(double? v) => v == null ? '—' : (v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1));
+    return [
+      FigHeading('Golf with ${f.name}'),
+      GridView.count(
+        crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), mainAxisSpacing: 8, crossAxisSpacing: 8, childAspectRatio: 1.5,
+        children: [
+          FigTile(label: 'Rounds together', value: '${g.rounds}', sub: '${g.wins} win${g.wins == 1 ? '' : 's'} · ${_hrs(g.minutes)} on the course', subLines: 2),
+          FigTile(label: '18-hole score', value: d(g.score18), sub: g.best18 != null ? 'best ${d(g.best18)}${g.score9 != null ? ' · 9-hole avg ${d(g.score9)}' : ''}' : g.score9 != null ? '9-hole avg ${d(g.score9)}' : 'solo formats only', subLines: 2),
+          FigTile(label: 'Putts', value: d(g.putts18 ?? g.putts9), sub: g.putts18 != null ? 'per 18 holes${g.putts9 != null ? ' · ${d(g.putts9)} per 9' : ''}' : 'per 9 holes', subLines: 2),
+          FigTile(label: 'GIR · FIR', value: g.gir == null && g.fir == null ? '—' : '${g.gir?.round() ?? '—'}% · ${g.fir?.round() ?? '—'}%', sub: 'greens · fairways in regulation', subLines: 2),
+          FigTile(label: 'Hazards', value: '${g.water} · ${g.bunkers}', sub: 'water balls · bunker shots', subLines: 2),
+          FigTile(label: 'Usual setup', value: g.teeBox ?? '—', sub: '${g.teeBox != null ? 'tees' : ''}${g.cart != null ? ' · cart ${g.cart!.toLowerCase()}' : ''}${g.topCourse != null ? ' · ${g.topCourse}' : ''}', subLines: 2),
+        ],
+      ),
+      const SizedBox(height: 12),
+      FigCard(title: 'My 18-hole scores with ${f.name}', sub: 'Solo formats, in order played', child: _ScoreLine(g.scores)),
+      FigCard(title: 'Courses', sub: 'Rounds per course', child: RankBars(g.courses, labelWidth: 130)),
+      FigCard(title: 'Formats', sub: 'Games played', child: RankBars(g.games)),
+      if (sc != null)
+        FigCard(
+          title: 'Scramble with ${f.name}',
+          sub: '${sc['rounds']} round${sc['rounds'] == 1 ? '' : 's'} · ${_hrs((sc['minutes'] as num? ?? 0).toInt())}',
+          child: Column(children: [
+            _kv('Best 9', '${sc['best9'] ?? '—'}'),
+            _kv('Eagles', '${sc['eagles']}'), _kv('Birdies', '${sc['birdies']}'), _kv('Pars', '${sc['pars']}'),
+            _kv('Bogeys', '${sc['bogeys']}'), _kv('Doubles', '${sc['doubles']}'), _kv('Triple+', '${sc['triples']}'),
+          ]),
+        ),
+    ];
+  }
+}
+
+/// Score per round, in order played — the notebook's "18-Hole Golf Scores" figure (green line, white dots).
+class _ScoreLine extends StatelessWidget {
+  const _ScoreLine(this.data);
+  final List<GolfScore> data;
+  @override
+  Widget build(BuildContext context) {
+    if (data.length < 2) return SizedBox(height: 80, child: Center(child: Text(data.isEmpty ? 'No 18-hole rounds together' : 'Only one 18-hole round so far', style: Fig.smallMuted)));
+    final scores = data.map((d) => d.score).toList();
+    final lo = ((scores.reduce((a, b) => a < b ? a : b) - 5) / 10).floor() * 10.0, hi = ((scores.reduce((a, b) => a > b ? a : b) + 5) / 10).ceil() * 10.0;
+    return SizedBox(
+      height: 200,
+      child: LineChart(LineChartData(
+        minY: lo, maxY: hi, minX: 1, maxX: data.length.toDouble(),
+        gridData: FlGridData(drawVerticalLine: false, getDrawingHorizontalLine: (_) => const FlLine(color: Fig.grid, strokeWidth: 1)),
+        borderData: FlBorderData(show: true, border: const Border(left: BorderSide(color: Fig.axis), bottom: BorderSide(color: Fig.axis))),
+        titlesData: FlTitlesData(
+          topTitles: const AxisTitles(), rightTitles: const AxisTitles(),
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 34, interval: 10, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: Fig.axisText))),
+          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, interval: data.length > 12 ? 2 : 1, getTitlesWidget: (v, m) => v % 1 == 0 ? Padding(padding: const EdgeInsets.only(top: 4), child: Text(v.toInt().toString(), style: Fig.axisText)) : const SizedBox.shrink())),
+        ),
+        lineTouchData: LineTouchData(touchTooltipData: LineTouchTooltipData(getTooltipColor: (_) => Fig.surface2, getTooltipItems: (spots) => spots.map((s) { final r = data[s.x.toInt() - 1]; return LineTooltipItem('${r.course}\n${r.score.toInt()} (${r.toPar >= 0 ? '+' : ''}${r.toPar.toInt()})', const TextStyle(color: Fig.ink, fontSize: 12, fontWeight: FontWeight.w700)); }).toList())),
+        lineBarsData: [LineChartBarData(
+          spots: [for (var i = 0; i < data.length; i++) FlSpot(i + 1.0, data[i].score)],
+          color: Fig.neon, barWidth: 2.5, isCurved: false,
+          dotData: FlDotData(show: true, getDotPainter: (s, p, b, i) => FlDotCirclePainter(radius: 3.5, color: Fig.white, strokeWidth: 0)),
+        )],
+      )),
+    );
   }
 }
 

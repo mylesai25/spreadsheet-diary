@@ -14,6 +14,18 @@ type Rec = Record<string, string>;
 
 export interface FitPiece { slot: string; type: string; color: string; days: number }
 export interface YearCount { year: string; days: number }
+export interface GolfScore { date: string; course: string; score: number; toPar: number; holes: number }
+/** The notebook's per-person golf summary (cells "Friendship Golf" / person_stats), solo formats = Regular / Wolf / blank. */
+export interface GolfStats {
+  rounds: number; wins: number; topCourse: string | null;
+  minutes: number; water: number; bunkers: number;
+  score9: number | null; score18: number | null; best18: number | null; putts9: number | null; putts18: number | null;
+  gir: number | null; fir: number | null; teeBox: string | null; cart: string | null;
+  courses: Count[]; games: Count[];
+  /** Solo 18-hole rounds together, oldest first (the "18-Hole Golf Scores" figure). */
+  scores: GolfScore[];
+  scramble: { rounds: number; best9: number | null; eagles: number; birdies: number; pars: number; bogeys: number; doubles: number; triples: number; minutes: number } | null;
+}
 
 export interface FriendProfile {
   name: string;
@@ -51,13 +63,16 @@ export interface FriendProfile {
   byMonth: Count[];
   cities: Count[];
   companions: Count[];
+  /** From the Restaurant sheet: meals whose Group includes the friend. */
   restaurants: Count[];
+  restaurantTypes: Count[];
+  foodRating: number | null;
   videoGames: Count[];
   fit: FitPiece[];
   food: { meat: string | null; fruit: string | null; veg: string | null };
   /** ISO dates seen this calendar year (for the calendar). */
   seenDates: string[];
-  golf: { rounds: number; wins: number; topCourse: string | null };
+  golf: GolfStats;
   miniGolf: { rounds: number; wins: number };
   discGolf: { rounds: number; wins: number };
   climbs: number;
@@ -166,6 +181,25 @@ export async function buildFriends(range: Range): Promise<FriendsData> {
       return [{ slot: s.slot, type, color, days: top.value }];
     });
     const golfMine = golfR.filter((r) => has(r.Players, name) || has(r["Scramble Team"], name) || has(r["Cart Partner"], name));
+    const solo = golfMine.filter((r) => !r.Game || /^(Regular|Wolf)$/i.test(r.Game));
+    const holes = (n: number) => solo.filter((r) => num(r["Holes Played"]) === n);
+    const sumOf = (rs: Rec[], k: string) => rs.reduce((a, r) => a + (num(r[k]) ?? 0), 0);
+    const scrambleMine = golfMine.filter((r) => /scramble/i.test(r.Game ?? "") && (has(r["Scramble Team"], name) || has(r.Players, name)));
+    const golfStats: GolfStats = {
+      rounds: golfMine.length, wins: golfMine.filter((r) => has(r["Game Winner"], name)).length, topCourse: mode(golfMine.map((r) => r.Course ?? "")),
+      minutes: sumOf(golfMine, "Duration (minutes)"), water: sumOf(golfMine, "Water Hazard"), bunkers: sumOf(golfMine, "Bunker Shots"),
+      score9: r1(avg(holes(9).map((r) => num(r.Score)))), score18: r1(avg(holes(18).map((r) => num(r.Score)))),
+      best18: holes(18).length ? Math.min(...holes(18).map((r) => num(r.Score) ?? Infinity)) : null,
+      putts9: r1(avg(holes(9).map((r) => num(r.Putts)))), putts18: r1(avg(holes(18).map((r) => num(r.Putts)))),
+      gir: r1(avg(solo.map((r) => num((r["GIR%"] ?? "").replace("%", ""))))), fir: r1(avg(solo.map((r) => num((r["FIR%"] ?? "").replace("%", ""))))),
+      teeBox: mode(golfMine.map((r) => r["Tee Box"] ?? "")), cart: mode(golfMine.map((r) => r["Cart?"] ?? "")),
+      courses: countTop(golfMine.map((r) => r.Course ?? ""), 8), games: countTop(golfMine.map((r) => r.Game || "Regular"), 6),
+      scores: holes(18).sort((a, b) => (a.Date < b.Date ? -1 : 1)).map((r) => ({ date: r.Date, course: r.Course ?? "", score: num(r.Score) ?? 0, toPar: (num(r.Score) ?? 0) - (num(r.Par) ?? 0), holes: 18 })),
+      scramble: scrambleMine.length ? {
+        rounds: scrambleMine.length, best9: scrambleMine.filter((r) => num(r["Holes Played"]) === 9).length ? Math.min(...scrambleMine.filter((r) => num(r["Holes Played"]) === 9).map((r) => num(r.Score) ?? Infinity)) : null,
+        eagles: sumOf(scrambleMine, "Eagles"), birdies: sumOf(scrambleMine, "Birdies"), pars: sumOf(scrambleMine, "Pars"), bogeys: sumOf(scrambleMine, "Bogeys"), doubles: sumOf(scrambleMine, "Double Bogeys"), triples: sumOf(scrambleMine, "Triple Bogeys+"), minutes: sumOf(scrambleMine, "Duration (minutes)"),
+      } : null,
+    };
     const miniMine = miniR.filter((r) => has(r.Players, name)), discMine = discR.filter((r) => has(r.Players, name));
     const climbMine = climbR.filter((r) => has(r.Climbers, name));
     const restMine = restR.filter((r) => has(r.Group, name));
@@ -187,11 +221,13 @@ export async function buildFriends(range: Range): Promise<FriendsData> {
       sports, skies, weekdays, byMonth,
       cities: countTop(rs.flatMap((r) => tokens(r["Cities Visited"])), 8),
       companions: countTop(rs.flatMap((r) => tokens(r["People seen in person"]).filter((t) => t !== name)), 8),
-      restaurants: countTop(rs.flatMap((r) => [r["Restaurant Breakfast"], r["Restaurant Lunch"], r["Restaurant Dinner"]].flatMap((v) => tokens(v))), 8),
+      restaurants: countTop(restMine.map((r) => r.Restaurant ?? ""), 8),
+      restaurantTypes: countTop(restMine.map((r) => r["Restaurant Type"] ?? ""), 8),
+      foodRating: r1(avg(restMine.map((r) => num(r["Food Rating"])))),
       videoGames: countTop(rs.flatMap((r) => tokens(r["Video games played"])), 6),
       fit, food: { meat: mode(rs.flatMap((r) => tokens(r["Meat Eaten"]))), fruit: mode(rs.flatMap((r) => tokens(r["Fruit Eaten"]))), veg: mode(rs.flatMap((r) => tokens(r["Vegetables Eaten"]))) },
       seenDates: yearRows.filter((r) => has(r["People seen in person"], name)).map((r) => r.Date),
-      golf: { rounds: golfMine.length, wins: golfMine.filter((r) => has(r["Game Winner"], name)).length, topCourse: mode(golfMine.map((r) => r.Course ?? "")) },
+      golf: golfStats,
       miniGolf: { rounds: miniMine.length, wins: miniMine.filter((r) => has(r.Winner, name)).length },
       discGolf: { rounds: discMine.length, wins: discMine.filter((r) => has(r.Winner, name)).length },
       climbs: climbMine.length,
@@ -207,7 +243,7 @@ export async function buildFriends(range: Range): Promise<FriendsData> {
       { label: "Sleep", value: p.avgSleep == null ? "—" : `${p.avgSleep} h`, sub: `${p.totalSleep} h total · ${p.totalNaps} naps` },
       { label: "Phone battery", value: p.avgBattery == null ? "—" : `${Math.round(p.avgBattery)}%`, sub: "average in the morning" },
       { label: "Golf together", value: String(p.golf.rounds), sub: p.golf.rounds ? `${p.golf.wins} win${p.golf.wins === 1 ? "" : "s"}${p.golf.topCourse ? ` · ${p.golf.topCourse}` : ""}` : "no rounds in range" },
-      { label: "Meals out", value: String(p.mealsOut.count), sub: p.mealsOut.topSpot ?? "no restaurant entries" },
+      { label: "Meals out", value: String(p.mealsOut.count), sub: p.mealsOut.topSpot ? `${p.mealsOut.topSpot}${p.foodRating != null ? ` · food ${p.foodRating}/10` : ""}` : "no restaurant entries" },
     ];
     return p;
   }).sort((a, b) => b.days - a.days || a.name.localeCompare(b.name));

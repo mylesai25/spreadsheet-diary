@@ -3,7 +3,7 @@ import Link from "next/link";
 import { buildFriends, type FriendProfile } from "@/lib/friends";
 import { RANGES, type Range } from "@/lib/metrics";
 import { formatShortDate } from "@/lib/dates";
-import { ChartCard, RankBars, Tile, VerticalBars } from "@/components/charts/Charts";
+import { ChartCard, RankBars, ScoreLine, Tile, VerticalBars } from "@/components/charts/Charts";
 import { YearCalendar } from "@/components/charts/Insights";
 import { FriendPicker } from "@/components/FriendPicker";
 import { ShowMoreRows } from "@/components/ShowMore";
@@ -112,7 +112,8 @@ function Profile({ f, year }: { f: FriendProfile; year: string }) {
         <ChartCard title="Sky" sub="Weather on days together"><RankBars data={f.skies} /></ChartCard>
         <ChartCard title="Where we were" sub="Cities visited that day"><RankBars data={f.cities} /></ChartCard>
         <ChartCard title="Also there" sub="People seen the same days"><RankBars data={f.companions} /></ChartCard>
-        <ChartCard title="Restaurants" sub="Where I ate on days together"><RankBars data={f.restaurants} unit="Days" /></ChartCard>
+        <ChartCard title="Restaurants together" sub={`From the Restaurant sheet · ${f.mealsOut.count} meal${f.mealsOut.count === 1 ? "" : "s"}${f.foodRating != null ? ` · food ${f.foodRating}/10` : ""}`}><RankBars data={f.restaurants} unit="Meals" /></ChartCard>
+        <ChartCard title="Cuisines together" sub="Restaurant type"><RankBars data={f.restaurantTypes} unit="Meals" /></ChartCard>
         <ChartCard title="Video games" sub="Played on days together"><RankBars data={f.videoGames} /></ChartCard>
         <ChartCard title={`What I wear around ${f.name}`} sub="Most common piece per slot">
           {f.fit.length === 0 ? <p className="text-sm text-muted">No outfit data.</p> : (
@@ -143,6 +144,8 @@ function Profile({ f, year }: { f: FriendProfile; year: string }) {
         </ChartCard>
       </div>
 
+      {f.golf.rounds > 0 && <GolfSection f={f} />}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         <ChartCard title={`${year} together`} sub="Every day this year you were in the same place" className="lg:col-span-3">
           <YearCalendar views={[{ key: "seen", title: f.name, kind: "color", values: seen }]} year={year} palette={{ Together: "#4ade80" }} emptyLabel="apart" />
@@ -150,6 +153,43 @@ function Profile({ f, year }: { f: FriendProfile; year: string }) {
         <ChartCard title="By year" sub="Days together, all journals">
           <RankBars data={f.byYear.map((y) => ({ name: y.year, value: y.days }))} height={Math.max(120, f.byYear.length * 34 + 16)} />
         </ChartCard>
+      </div>
+    </>
+  );
+}
+
+const hrs = (m: number) => `${Math.round(m / 6) / 10} h`;
+
+/** The notebook's "Friendship Golf" block: rounds, scores, putts, GIR/FIR, hazards, courses, and the 18-hole score line. */
+function GolfSection({ f }: { f: FriendProfile }) {
+  const g = f.golf;
+  const tiles = [
+    { label: "Rounds together", value: String(g.rounds), sub: `${g.wins} win${g.wins === 1 ? "" : "s"} · ${hrs(g.minutes)} on the course` },
+    { label: "18-hole score", value: g.score18 == null ? "—" : String(g.score18), sub: g.best18 != null ? `best ${g.best18}${g.score9 != null ? ` · 9-hole avg ${g.score9}` : ""}` : g.score9 != null ? `9-hole avg ${g.score9}` : "solo formats only" },
+    { label: "Putts", value: g.putts18 == null ? (g.putts9 == null ? "—" : String(g.putts9)) : String(g.putts18), sub: g.putts18 != null ? `per 18 holes${g.putts9 != null ? ` · ${g.putts9} per 9` : ""}` : "per 9 holes" },
+    { label: "GIR · FIR", value: g.gir == null && g.fir == null ? "—" : `${g.gir ?? "—"}% · ${g.fir ?? "—"}%`, sub: "greens · fairways in regulation" },
+    { label: "Hazards", value: `${g.water} · ${g.bunkers}`, sub: "water balls · bunker shots" },
+    { label: "Usual setup", value: g.teeBox ?? "—", sub: `${g.teeBox ? "tees" : ""}${g.cart ? ` · cart ${g.cart.toLowerCase()}` : ""}${g.topCourse ? ` · ${g.topCourse}` : ""}` },
+  ];
+  return (
+    <>
+      <h2 className="section-title mt-2">Golf with {f.name}</h2>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {tiles.map((t) => <Tile key={t.label} {...t} />)}
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <ChartCard title={`My 18-Hole Scores with ${f.name}`} sub="Solo formats (Regular / Wolf), in order played" className="lg:col-span-2"><ScoreLine data={g.scores} /></ChartCard>
+        <ChartCard title="Courses" sub="Rounds per course"><RankBars data={g.courses} unit="Rounds" /></ChartCard>
+        <ChartCard title="Formats" sub="Games played"><RankBars data={g.games} unit="Rounds" /></ChartCard>
+        {g.scramble && (
+          <ChartCard title={`Scramble with ${f.name}`} sub={`${g.scramble.rounds} round${g.scramble.rounds === 1 ? "" : "s"} · ${hrs(g.scramble.minutes)}`} className="lg:col-span-2">
+            <div className="grid grid-cols-3 gap-3 text-center sm:grid-cols-7">
+              {[["Best 9", g.scramble.best9 ?? "—"], ["Eagles", g.scramble.eagles], ["Birdies", g.scramble.birdies], ["Pars", g.scramble.pars], ["Bogeys", g.scramble.bogeys], ["Doubles", g.scramble.doubles], ["Triple+", g.scramble.triples]].map(([k, v]) => (
+                <div key={String(k)}><div className="text-2xl font-bold tabular-nums">{v}</div><div className="text-xs text-ink-2">{k}</div></div>
+              ))}
+            </div>
+          </ChartCard>
+        )}
       </div>
     </>
   );

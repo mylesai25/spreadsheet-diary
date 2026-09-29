@@ -305,6 +305,43 @@ class FitPiece {
   factory FitPiece.fromJson(Map<String, dynamic> j) => FitPiece(_s(j['slot']), _s(j['type']), _s(j['color']), (j['days'] as num? ?? 0).toInt());
 }
 
+class GolfScore {
+  GolfScore(this.date, this.course, this.score, this.toPar);
+  final String date, course;
+  final double score, toPar;
+  factory GolfScore.fromJson(Map<String, dynamic> j) => GolfScore(_s(j['date']), _s(j['course']), _d(j['score']) ?? 0, _d(j['toPar']) ?? 0);
+}
+
+/// The notebook's per-person golf summary ("Friendship Golf").
+class FriendGolf {
+  FriendGolf.fromJson(Map<String, dynamic> j)
+      : rounds = (j['rounds'] as num? ?? 0).toInt(),
+        wins = (j['wins'] as num? ?? 0).toInt(),
+        topCourse = j['topCourse'] as String?,
+        minutes = (j['minutes'] as num? ?? 0).toInt(),
+        water = (j['water'] as num? ?? 0).toInt(),
+        bunkers = (j['bunkers'] as num? ?? 0).toInt(),
+        score9 = _d(j['score9']),
+        score18 = _d(j['score18']),
+        best18 = _d(j['best18']),
+        putts9 = _d(j['putts9']),
+        putts18 = _d(j['putts18']),
+        gir = _d(j['gir']),
+        fir = _d(j['fir']),
+        teeBox = j['teeBox'] as String?,
+        cart = j['cart'] as String?,
+        courses = (j['courses'] as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList(),
+        games = (j['games'] as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList(),
+        scores = (j['scores'] as List? ?? []).map((e) => GolfScore.fromJson(e as Map<String, dynamic>)).toList(),
+        scramble = j['scramble'] == null ? null : Map<String, dynamic>.from(j['scramble'] as Map);
+  final int rounds, wins, minutes, water, bunkers;
+  final String? topCourse, teeBox, cart;
+  final double? score9, score18, best18, putts9, putts18, gir, fir;
+  final List<Count> courses, games;
+  final List<GolfScore> scores;
+  final Map<String, dynamic>? scramble;
+}
+
 class FriendProfile {
   FriendProfile.fromJson(Map<String, dynamic> j)
       : name = _s(j['name']),
@@ -339,15 +376,15 @@ class FriendProfile {
         cities = _counts(j['cities']),
         companions = _counts(j['companions']),
         restaurants = _counts(j['restaurants']),
+        restaurantTypes = _counts(j['restaurantTypes']),
+        foodRating = _d(j['foodRating']),
         videoGames = _counts(j['videoGames']),
         fit = (j['fit'] as List? ?? []).map((e) => FitPiece.fromJson(e as Map<String, dynamic>)).toList(),
         meat = (j['food'] as Map?)?['meat'] as String?,
         fruit = (j['food'] as Map?)?['fruit'] as String?,
         veg = (j['food'] as Map?)?['veg'] as String?,
         seenDates = (j['seenDates'] as List? ?? []).map(_s).toSet(),
-        golfRounds = ((j['golf'] as Map?)?['rounds'] as num? ?? 0).toInt(),
-        golfWins = ((j['golf'] as Map?)?['wins'] as num? ?? 0).toInt(),
-        golfCourse = (j['golf'] as Map?)?['topCourse'] as String?,
+        golf = FriendGolf.fromJson(Map<String, dynamic>.from(j['golf'] as Map? ?? {})),
         miniRounds = ((j['miniGolf'] as Map?)?['rounds'] as num? ?? 0).toInt(),
         miniWins = ((j['miniGolf'] as Map?)?['wins'] as num? ?? 0).toInt(),
         discRounds = ((j['discGolf'] as Map?)?['rounds'] as num? ?? 0).toInt(),
@@ -361,11 +398,13 @@ class FriendProfile {
   static List<Count> _counts(dynamic v) => (v as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList();
 
   final String name, firstSeen, lastSeen;
-  final int days, longestStreak, daysSince, totalSleep, totalNaps, totalDrinks, golfRounds, golfWins, miniRounds, miniWins, discRounds, discWins, climbs, mealsOut;
+  final int days, longestStreak, daysSince, totalSleep, totalNaps, totalDrinks, miniRounds, miniWins, discRounds, discWins, climbs, mealsOut;
+  final FriendGolf golf;
+  final double? foodRating;
   final double share, drinkDayPct, outsidePct, gymPct;
   final double? avgFun, funLift, avgProductivity, avgSleep, avgNaps, avgBattery, avgDrinks, avgSteps, avgCalories;
-  final String? topSport, topSky, topDay, meat, fruit, veg, golfCourse, topSpot;
-  final List<Count> sports, skies, weekdays, byMonth, cities, companions, restaurants, videoGames, byYear;
+  final String? topSport, topSky, topDay, meat, fruit, veg, topSpot;
+  final List<Count> sports, skies, weekdays, byMonth, cities, companions, restaurants, restaurantTypes, videoGames, byYear;
   final List<FitPiece> fit;
   final Set<String> seenDates;
   final List<Tile> tiles;

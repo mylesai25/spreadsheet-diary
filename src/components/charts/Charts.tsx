@@ -5,6 +5,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis, LabelList, Cell,
 } from "recharts";
 import type { Count, DayPoint, GolfRound, Tile as TileData, WeekPoint } from "@/lib/metrics";
+import type { GolfScore } from "@/lib/friends";
 import { formatShortDate } from "@/lib/dates";
 import { colorFor, greenRamp, NEON } from "@/lib/colors";
 
@@ -229,6 +230,27 @@ export function GolfChart({ data, height = 220 }: { data: GolfRound[]; height?: 
         <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />
         <Line isAnimationActive={false} type="monotone" dataKey="toPar" name="Score to par" stroke={S[0]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[0] }} activeDot={{ r: 5, stroke: "var(--surface)" }} />
         <Line isAnimationActive={false} type="monotone" dataKey="putts" name="Putts" stroke={S[1]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[1] }} activeDot={{ r: 5, stroke: "var(--surface)" }} connectNulls />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Score per round, in order played — the notebook's "My 18-Hole Golf Scores" figure (green line, white dots). */
+export function ScoreLine({ data, height = 220 }: { data: GolfScore[]; height?: number }) {
+  if (data.length < 2) return <Empty text={data.length ? "Only one 18-hole round so far" : "No 18-hole rounds together"} />;
+  const rows = data.map((d, i) => ({ ...d, round: i + 1 }));
+  const lo = Math.floor((Math.min(...data.map((d) => d.score)) - 5) / 10) * 10, hi = Math.ceil((Math.max(...data.map((d) => d.score)) + 5) / 10) * 10;
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={rows} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+        {grid}
+        <XAxis dataKey="round" {...axis} interval={0} tickFormatter={(v) => (rows.length > 12 && v % 2 === 0 ? "" : String(v))} />
+        <YAxis {...axis} domain={[lo, hi]} width={44} />
+        <Tooltip cursor={{ stroke: "var(--viz-axis)" }} content={({ active, payload }) => {
+          const p = payload?.[0]?.payload as (GolfScore & { round: number }) | undefined;
+          return active && p ? <div className={tipBox}><div className="text-xs text-muted">Round {p.round} · {formatShortDate(p.date)}</div>{p.course}<div><b>{p.score}</b> <span className="text-ink-2">({p.toPar >= 0 ? "+" : ""}{p.toPar})</span></div></div> : null;
+        }} />
+        <Line isAnimationActive={false} type="linear" dataKey="score" name="Score" stroke={S[0]} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 0, fill: "#d8dcd4" }} activeDot={{ r: 6, stroke: "var(--surface)" }} />
       </LineChart>
     </ResponsiveContainer>
   );
