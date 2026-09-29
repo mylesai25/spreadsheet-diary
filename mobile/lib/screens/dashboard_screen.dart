@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import '../widgets/bars.dart';
 
 const _ranges = [('7d', '7 days'), ('30d', '30 days'), ('90d', '90 days'), ('ytd', 'This year'), ('all', 'All')];
 
@@ -92,12 +93,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ]),
                 ),
                 const FigHeading('Colors'),
-                FigCard(title: 'My Closet by Color — Percent', sub: 'Short color of every piece', child: _VerticalBars(s.colorFamilies, colorByName: true, asPercentOf: s.total.toDouble())),
-                FigCard(title: "My Closet's Shades of Green — Percent", sub: 'Primary color of the $green green pieces', child: _VerticalBars(s.greenShades.take(8).toList(), colorByName: true, asPercentOf: green.toDouble())),
+                FigCard(title: 'My Closet by Color — Percent', sub: 'Short color of every piece', child: VerticalBars(s.colorFamilies, colorByName: true, asPercentOf: s.total.toDouble())),
+                FigCard(title: "My Closet's Shades of Green — Percent", sub: 'Primary color of the $green green pieces', child: VerticalBars(s.greenShades.take(8).toList(), colorByName: true, asPercentOf: green.toDouble())),
                 const FigHeading('Wear'),
-                FigCard(title: 'Brands in the Closet — Percent', sub: 'Share of all pieces per brand', child: _VerticalBars(s.brands.take(8).toList(), asPercentOf: s.total.toDouble())),
-                FigCard(title: 'Green goes with', sub: 'Accent colors on green pieces', child: _RankBars(s.greenAccents, colorByName: true)),
-                FigCard(title: 'Most worn in ${s.year}', sub: 'Days worn, top two pieces of each kind', child: _RankBars(s.mostWorn, labelWidth: 150)),
+                FigCard(title: 'Brands in the Closet — Percent', sub: 'Share of all pieces per brand', child: VerticalBars(s.brands.take(8).toList(), asPercentOf: s.total.toDouble())),
+                FigCard(title: 'Green goes with', sub: 'Accent colors on green pieces', child: RankBars(s.greenAccents, colorByName: true)),
+                FigCard(title: 'Most worn in ${s.year}', sub: 'Days worn, top two pieces of each kind', child: RankBars(s.mostWorn, labelWidth: 150)),
               ],
             );
           },
@@ -132,11 +133,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 FigCard(title: 'Gym days per week', child: _weekBars(d.weeks.map((w) => w.gymDays).toList(), d.weeks.map((w) => w.label).toList())),
                 FigCard(title: 'Drinks per week', child: _weekBars(d.weeks.map((w) => w.drinks).toList(), d.weeks.map((w) => w.label).toList())),
                 if (d.golf.isNotEmpty) FigCard(title: 'Golf', sub: 'Score to par per round', child: _golfChart(d)),
-                FigCard(title: 'Shirt colors', sub: 'Days worn', child: _RankBars(d.shirtColors, colorByName: true)),
-                FigCard(title: 'People seen most', sub: 'Days together', child: _RankBars(d.people)),
-                FigCard(title: 'Woke up in', sub: 'Days per city', child: _RankBars(d.wakeCities)),
-                FigCard(title: 'Cuisines', sub: 'Restaurant visits', child: _RankBars(d.cuisines)),
-                FigCard(title: 'Sky', sub: 'Days', child: _RankBars(d.sky)),
+                FigCard(title: 'Shirt colors', sub: 'Days worn', child: RankBars(d.shirtColors, colorByName: true)),
+                FigCard(title: 'People seen most', sub: 'Days together', child: RankBars(d.people)),
+                FigCard(title: 'Woke up in', sub: 'Days per city', child: RankBars(d.wakeCities)),
+                FigCard(title: 'Cuisines', sub: 'Restaurant visits', child: RankBars(d.cuisines)),
+                FigCard(title: 'Sky', sub: 'Days', child: RankBars(d.sky)),
               ],
             );
           },
@@ -185,7 +186,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       BarChartRodData(toY: y, color: fill ?? Fig.fill, width: width, borderRadius: const BorderRadius.vertical(top: Radius.circular(2)), borderSide: BorderSide(color: stroke ?? Fig.neon, width: 1));
 
   Widget _sleepChart(Dashboard d) {
-    if (d.days.isEmpty) return const _Empty();
+    if (d.days.isEmpty) return const EmptyChart();
     return SizedBox(
       height: 200,
       child: LineChart(LineChartData(
@@ -198,7 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _funChart(Dashboard d) {
-    if (d.days.isEmpty) return const _Empty();
+    if (d.days.isEmpty) return const EmptyChart();
     return Column(children: [
       SizedBox(
         height: 200,
@@ -214,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _stepsChart(Dashboard d) {
-    if (d.days.isEmpty) return const _Empty();
+    if (d.days.isEmpty) return const EmptyChart();
     if (d.days.length > 60) return _weekBars(d.weeks.map((w) => w.stepsAvg ?? 0).toList(), d.weeks.map((w) => w.label).toList(), fmt: (v) => NumberFormat.compact().format(v));
     return SizedBox(
       height: 200,
@@ -228,7 +229,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _weekBars(List<double> values, List<String> labels, {String Function(double)? fmt}) {
-    if (values.isEmpty) return const _Empty();
+    if (values.isEmpty) return const EmptyChart();
     final step = (labels.length / 6).ceil().clamp(1, 99);
     return SizedBox(
       height: 200,
@@ -269,116 +270,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
         lineBarsData: [_line([for (var i = 0; i < rounds.length; i++) FlSpot(i.toDouble(), rounds[i].toPar)], Fig.neon, dots: true)],
       )),
     );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty();
-  @override
-  Widget build(BuildContext context) => const SizedBox(height: 120, child: Center(child: Text('No data in this range', style: Fig.smallMuted)));
-}
-
-String _fmtCount(double v) => v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1);
-
-/// Horizontal ranked bars, brightest at the top (the brands figure's ramp), each with a lime outline.
-/// `colorByName` paints each bar with the named color it represents (shirt colors, shades of green).
-class _RankBars extends StatelessWidget {
-  const _RankBars(this.data, {this.colorByName = false, this.labelWidth = 96});
-  final List<Count> data;
-  final bool colorByName;
-  final double labelWidth;
-  @override
-  Widget build(BuildContext context) {
-    if (data.isEmpty) return const _Empty();
-    final max = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
-    return Column(children: [
-      for (var i = 0; i < data.length; i++)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(children: [
-            SizedBox(width: labelWidth, child: Text(data[i].name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, color: Fig.ink))),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: (data[i].value / max).clamp(0.03, 1),
-                  child: Container(height: 15, decoration: BoxDecoration(color: colorByName ? (Fig.colorFor(data[i].name) ?? Fig.ramp(i, data.length)) : Fig.ramp(i, data.length), borderRadius: BorderRadius.circular(3), border: Border.all(color: Fig.neon.withValues(alpha: 0.7), width: 1))),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            SizedBox(width: 34, child: Text(_fmtCount(data[i].value), style: Fig.barLabel)),
-          ]),
-        ),
-    ]);
-  }
-}
-
-/// Vertical ranked bars with angled labels and values on top — the "most-worn brands" / "shades of green" figures.
-/// `asPercentOf` labels each bar as a share of that total (the figures' "— Percent" variant).
-class _VerticalBars extends StatelessWidget {
-  const _VerticalBars(this.data, {this.colorByName = false, this.asPercentOf});
-  final List<Count> data;
-  final bool colorByName;
-  final double? asPercentOf;
-  static const height = 150.0;
-  @override
-  Widget build(BuildContext context) {
-    if (data.isEmpty) return const _Empty();
-    final max = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
-    String label(double v) => asPercentOf != null && asPercentOf! > 0 ? '${(v / asPercentOf! * 100).toStringAsFixed(v / asPercentOf! * 100 >= 10 ? 0 : 1)}%' : _fmtCount(v);
-    return Column(children: [
-      Container(
-        height: height,
-        decoration: const BoxDecoration(border: Border(left: BorderSide(color: Fig.axis), bottom: BorderSide(color: Fig.axis))),
-        padding: const EdgeInsets.only(left: 4, right: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            for (var i = 0; i < data.length; i++)
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(label(data[i].value), style: Fig.barLabel.copyWith(fontSize: 10), maxLines: 1, overflow: TextOverflow.visible, softWrap: false),
-                      const SizedBox(height: 2),
-                      Container(
-                        height: ((data[i].value / max) * (height - 22)).clamp(2.0, height - 22),
-                        decoration: BoxDecoration(color: colorByName ? (Fig.colorFor(data[i].name) ?? Fig.ramp(i, data.length)) : Fig.ramp(i, data.length), borderRadius: const BorderRadius.vertical(top: Radius.circular(3)), border: Border.all(color: Fig.neon.withValues(alpha: 0.7), width: 1)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-      ClipRect(
-        child: SizedBox(
-        height: 86,
-        child: Row(children: [
-          for (final d in data)
-            Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: OverflowBox(
-                  maxWidth: 110, minWidth: 110, alignment: Alignment.topCenter,
-                  child: Transform.translate(
-                    offset: const Offset(-8, 8),
-                    child: Transform.rotate(
-                      angle: -1.05, alignment: Alignment.topRight,
-                      child: SizedBox(width: 110, child: Text(d.name, textAlign: TextAlign.right, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Fig.ink, fontSize: 10, fontWeight: FontWeight.w700))),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ]),
-      ),
-      ),
-    ]);
   }
 }

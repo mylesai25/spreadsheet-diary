@@ -296,3 +296,89 @@ class ActivityData {
     );
   }
 }
+
+/// /api/friends — per-person stats for days spent together (the Friends tab).
+class FitPiece {
+  FitPiece(this.slot, this.type, this.color, this.days);
+  final String slot, type, color;
+  final int days;
+  factory FitPiece.fromJson(Map<String, dynamic> j) => FitPiece(_s(j['slot']), _s(j['type']), _s(j['color']), (j['days'] as num? ?? 0).toInt());
+}
+
+class FriendProfile {
+  FriendProfile.fromJson(Map<String, dynamic> j)
+      : name = _s(j['name']),
+        days = (j['days'] as num? ?? 0).toInt(),
+        share = _d(j['share']) ?? 0,
+        firstSeen = _s(j['firstSeen']),
+        lastSeen = _s(j['lastSeen']),
+        longestStreak = (j['longestStreak'] as num? ?? 0).toInt(),
+        daysSince = (j['daysSince'] as num? ?? 0).toInt(),
+        avgFun = _d(j['avgFun']),
+        funLift = _d(j['funLift']),
+        avgProductivity = _d(j['avgProductivity']),
+        avgSleep = _d(j['avgSleep']),
+        totalSleep = (j['totalSleep'] as num? ?? 0).toInt(),
+        avgNaps = _d(j['avgNaps']),
+        totalNaps = (j['totalNaps'] as num? ?? 0).toInt(),
+        avgBattery = _d(j['avgBattery']),
+        avgDrinks = _d(j['avgDrinks']),
+        totalDrinks = (j['totalDrinks'] as num? ?? 0).toInt(),
+        drinkDayPct = _d(j['drinkDayPct']) ?? 0,
+        avgSteps = _d(j['avgSteps']),
+        avgCalories = _d(j['avgCalories']),
+        outsidePct = _d(j['outsidePct']) ?? 0,
+        gymPct = _d(j['gymPct']) ?? 0,
+        topSport = j['topSport'] as String?,
+        topSky = j['topSky'] as String?,
+        topDay = j['topDay'] as String?,
+        sports = _counts(j['sports']),
+        skies = _counts(j['skies']),
+        weekdays = _counts(j['weekdays']),
+        byMonth = _counts(j['byMonth']),
+        cities = _counts(j['cities']),
+        companions = _counts(j['companions']),
+        restaurants = _counts(j['restaurants']),
+        videoGames = _counts(j['videoGames']),
+        fit = (j['fit'] as List? ?? []).map((e) => FitPiece.fromJson(e as Map<String, dynamic>)).toList(),
+        meat = (j['food'] as Map?)?['meat'] as String?,
+        fruit = (j['food'] as Map?)?['fruit'] as String?,
+        veg = (j['food'] as Map?)?['veg'] as String?,
+        seenDates = (j['seenDates'] as List? ?? []).map(_s).toSet(),
+        golfRounds = ((j['golf'] as Map?)?['rounds'] as num? ?? 0).toInt(),
+        golfWins = ((j['golf'] as Map?)?['wins'] as num? ?? 0).toInt(),
+        golfCourse = (j['golf'] as Map?)?['topCourse'] as String?,
+        miniRounds = ((j['miniGolf'] as Map?)?['rounds'] as num? ?? 0).toInt(),
+        miniWins = ((j['miniGolf'] as Map?)?['wins'] as num? ?? 0).toInt(),
+        discRounds = ((j['discGolf'] as Map?)?['rounds'] as num? ?? 0).toInt(),
+        discWins = ((j['discGolf'] as Map?)?['wins'] as num? ?? 0).toInt(),
+        climbs = (j['climbs'] as num? ?? 0).toInt(),
+        mealsOut = ((j['mealsOut'] as Map?)?['count'] as num? ?? 0).toInt(),
+        topSpot = (j['mealsOut'] as Map?)?['topSpot'] as String?,
+        byYear = (j['byYear'] as List? ?? []).map((e) => Count(_s((e as Map)['year']), _d(e['days']) ?? 0)).toList(),
+        tiles = (j['tiles'] as List? ?? []).map((e) => Tile.fromJson(e as Map<String, dynamic>)).toList();
+
+  static List<Count> _counts(dynamic v) => (v as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList();
+
+  final String name, firstSeen, lastSeen;
+  final int days, longestStreak, daysSince, totalSleep, totalNaps, totalDrinks, golfRounds, golfWins, miniRounds, miniWins, discRounds, discWins, climbs, mealsOut;
+  final double share, drinkDayPct, outsidePct, gymPct;
+  final double? avgFun, funLift, avgProductivity, avgSleep, avgNaps, avgBattery, avgDrinks, avgSteps, avgCalories;
+  final String? topSport, topSky, topDay, meat, fruit, veg, golfCourse, topSpot;
+  final List<Count> sports, skies, weekdays, byMonth, cities, companions, restaurants, videoGames, byYear;
+  final List<FitPiece> fit;
+  final Set<String> seenDates;
+  final List<Tile> tiles;
+}
+
+class FriendsData {
+  FriendsData.fromJson(Map<String, dynamic> j)
+      : start = _s(j['start']),
+        end = _s(j['end']),
+        year = _s(j['year']),
+        daysLogged = (j['daysLogged'] as num? ?? 0).toInt(),
+        friends = (j['friends'] as List? ?? []).map((e) => FriendProfile.fromJson(e as Map<String, dynamic>)).toList();
+  final String start, end, year;
+  final int daysLogged;
+  final List<FriendProfile> friends;
+}

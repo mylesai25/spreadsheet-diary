@@ -5,6 +5,7 @@ import 'api/client.dart';
 import 'reminders.dart';
 import 'screens/activities_screen.dart';
 import 'screens/dashboard_screen.dart';
+import 'screens/friends_screen.dart';
 import 'screens/log_screen.dart';
 import 'screens/settings_screen.dart';
 import 'theme.dart';
@@ -63,7 +64,7 @@ class _ShellState extends State<Shell> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = const [LogScreen(), DashboardScreen(), ActivitiesScreen(), SettingsScreen()];
+    final pages = const [LogScreen(), DashboardScreen(), FriendsScreen(), ActivitiesScreen(), SettingsScreen()];
     return Scaffold(
       body: IndexedStack(index: _tab, children: pages),
       bottomNavigationBar: Container(
@@ -74,6 +75,7 @@ class _ShellState extends State<Shell> {
           destinations: const [
             NavigationDestination(icon: Icon(Icons.edit_note_outlined), selectedIcon: Icon(Icons.edit_note), label: 'Log'),
             NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights), label: 'Dashboard'),
+            NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Friends'),
             NavigationDestination(icon: Icon(Icons.sports_golf_outlined), selectedIcon: Icon(Icons.sports_golf), label: 'Activities'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],

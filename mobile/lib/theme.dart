@@ -197,9 +197,10 @@ class FigCard extends StatelessWidget {
 
 /// Headline number in a framed panel.
 class FigTile extends StatelessWidget {
-  const FigTile({super.key, required this.label, required this.value, this.sub});
+  const FigTile({super.key, required this.label, required this.value, this.sub, this.subLines = 1});
   final String label, value;
   final String? sub;
+  final int subLines;
   @override
   Widget build(BuildContext context) => Card(
         child: Padding(
@@ -211,7 +212,7 @@ class FigTile extends StatelessWidget {
               Text(label.toUpperCase(), style: Fig.tileLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
               const SizedBox(height: 3),
               Text(value, style: Fig.tileValue, maxLines: 1, overflow: TextOverflow.ellipsis),
-              if (sub != null) Padding(padding: const EdgeInsets.only(top: 3), child: Text(sub!, maxLines: 1, overflow: TextOverflow.ellipsis, style: Fig.small)),
+              if (sub != null) Padding(padding: const EdgeInsets.only(top: 3), child: Text(sub!, maxLines: subLines, overflow: TextOverflow.ellipsis, style: Fig.small)),
             ],
           ),
         ),
