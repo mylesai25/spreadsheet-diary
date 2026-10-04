@@ -14,14 +14,13 @@ const shiftMonth = (ym: string, n: number) => { const [y, m] = ym.split("-").map
  * and showing the fun meter inside. Not-logged days are dashed, today has a "+", and picking a day
  * opens its summary beside the grid with a link to the entry.
  */
-export function HomeCalendar({ cal, range, streak }: { cal: CalendarMonth; range: string; streak: number }) {
+export function HomeCalendar({ cal, streak, base = "/" }: { cal: CalendarMonth; streak: number; base?: string }) {
   const logged = cal.days.filter((d) => d.logged);
   const [sel, setSel] = useState<string | null>(() => (cal.days.find((d) => d.date === cal.today && d.logged) ?? logged[logged.length - 1])?.date ?? null);
   const selected = cal.days.find((d) => d.date === sel) ?? null;
   const lead = new Date(`${cal.month}-01T12:00:00Z`).getUTCDay();
   const thisMonth = cal.today.slice(0, 7);
-  const href = (m: string) => `/?range=${range}&month=${m}`;
-  const shirts = [...new Map(logged.filter((d) => d.shirt).map((d) => [d.shirt!.hex, d.shirt!.name])).entries()].slice(0, 8);
+  const href = (m: string) => `${base}${base.includes("?") ? "&" : "?"}month=${m}`;
 
   return (
     <section className="card grid min-w-0 gap-4 p-4 lg:grid-cols-3">
@@ -29,7 +28,7 @@ export function HomeCalendar({ cal, range, streak }: { cal: CalendarMonth; range
         <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <h3 className="text-[15px] font-bold leading-tight">Calendar</h3>
-            <p className="mt-0.5 text-xs text-ink-2">Shirt color per day, fun meter inside. Tap a day to see it, or an empty day to log it.{streak > 1 ? ` · ${streak}-day streak` : ""}</p>
+            {streak > 1 && <p className="mt-0.5 text-xs text-neon">{streak}-day streak</p>}
           </div>
           <div className="seg">
             <Link href={href(shiftMonth(cal.month, -1))} role="button" aria-label="Previous month">‹</Link>
@@ -42,8 +41,7 @@ export function HomeCalendar({ cal, range, streak }: { cal: CalendarMonth; range
           {Array.from({ length: lead }, (_, i) => <div key={`lead${i}`} />)}
           {cal.days.map((d) => <DayCell key={d.date} d={d} today={cal.today} selected={d.date === sel} onPick={() => setSel(d.date)} />)}
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-2">
-          {shirts.map(([hex, name]) => <span key={hex} className="inline-flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full" style={{ background: hex }} />{name}</span>)}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
           <span className="inline-flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full border border-dashed border-muted" />Not logged</span>
           <span className="inline-flex items-center gap-1"><span className="inline-block h-3 w-3 rounded-full border-2 border-neon" />Today</span>
         </div>

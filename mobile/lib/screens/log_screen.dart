@@ -227,10 +227,15 @@ class _LogScreenState extends State<LogScreen> {
                       ),
                     ),
                     Expanded(
-                      child: ListView(
-                        controller: _scroll,
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                        children: [for (final s in _sections!) _buildSection(s)],
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                        child: ListView(
+                          controller: _scroll,
+                          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                          children: [for (final s in _sections!) _buildSection(s)],
+                        ),
                       ),
                     ),
                   ],

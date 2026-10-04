@@ -26,14 +26,11 @@ class HomeCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     final lead = DateTime.parse('${cal.month}-01').weekday % 7;
     final thisMonth = cal.today.substring(0, 7);
-    final logged = cal.days.where((d) => d.logged && d.shirtHex != null).toList();
-    final shirts = <String, String>{for (final d in logged) d.shirtHex!: d.shirtName ?? ''};
     return FigCard(
-      title: 'Calendar',
-      sub: 'Shirt color per day, fun meter inside. Tap a day to see it or log it.${streak > 1 ? ' · $streak-day streak' : ''}',
+      title: cal.label,
+      sub: streak > 1 ? '$streak-day streak' : null,
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.chevron_left), onPressed: () => onMonth(_shiftMonth(cal.month, -1))),
-        Text(cal.label.replaceAll(RegExp(r' \d{4}$'), ''), style: const TextStyle(color: Fig.ink, fontWeight: FontWeight.w800, fontSize: 13)),
         IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.chevron_right), onPressed: cal.month.compareTo(thisMonth) < 0 ? () => onMonth(_shiftMonth(cal.month, 1)) : null),
       ]),
       child: Column(children: [
@@ -48,7 +45,6 @@ class HomeCalendar extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Wrap(spacing: 10, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-          for (final e in shirts.entries.take(6)) _legend(Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, color: hexColor(e.key))), e.value),
           _legend(CustomPaint(size: const Size(12, 12), painter: const DashedCircle(color: Fig.muted)), 'Not logged'),
           _legend(Container(width: 12, height: 12, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Fig.neon, width: 2))), 'Today'),
         ]),
@@ -56,7 +52,7 @@ class HomeCalendar extends StatelessWidget {
     );
   }
 
-  Widget _legend(Widget swatch, String text) => Row(mainAxisSize: MainAxisSize.min, children: [swatch, const SizedBox(width: 4), Text(text, style: Fig.small)]);
+  Widget _legend(Widget swatch, String text) => Row(mainAxisSize: MainAxisSize.min, children: [swatch, const SizedBox(width: 4), Text(text, style: Fig.smallMuted)]);
 
   void _tapped(BuildContext context, CalendarDay d) {
     if (d.future) return;

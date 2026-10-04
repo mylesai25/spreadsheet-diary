@@ -14,7 +14,8 @@ interface Suggest<T> {
   anchor: RefObject<HTMLElement | null>;
 }
 
-const MAX = 12;
+/** Suggestions shown at once — short on purpose so the list never swallows the form on a phone. */
+const MAX = 3;
 
 function useFiltered<T>(items: T[], query: string, label: (t: T) => string, sub?: (t: T) => string | undefined) {
   return useMemo(() => {
@@ -65,7 +66,7 @@ function SuggestList<T>({ items, label, sub, keyOf, onPick, query, open, onClose
     <ul role="listbox" className="menu">
       {filtered.map((it, i) => (
         <li key={keyOf(it)} role="option" aria-selected={i === active}
-          onMouseDown={(e) => { e.preventDefault(); onPick(it); onClose(); }}
+          onMouseDown={(e) => { e.preventDefault(); onPick(it); onClose(); (document.activeElement as HTMLElement | null)?.blur(); }}
           onMouseEnter={() => setActive(i)}>
           <span>{label(it)}</span>
           {sub?.(it) && <span className="ml-2 text-xs text-muted">{sub(it)}</span>}
@@ -80,7 +81,8 @@ function useListKeys<T>(filtered: T[], active: number, setActive: (n: number) =>
     if (e.key === "ArrowDown") { e.preventDefault(); setActive(Math.min(active + 1, filtered.length - 1)); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setActive(Math.max(active - 1, 0)); }
     else if (e.key === "Escape") close();
-    else if (e.key === "Enter" && filtered[active] !== undefined && filtered.length) { e.preventDefault(); pick(filtered[active]); close(); }
+    else if (e.key === "Enter" && filtered[active] !== undefined && filtered.length) { e.preventDefault(); pick(filtered[active]); close(); (e.target as HTMLElement).blur(); }
+    else if (e.key === "Enter") { close(); (e.target as HTMLElement).blur(); }
   };
 }
 

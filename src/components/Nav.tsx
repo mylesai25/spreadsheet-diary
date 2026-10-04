@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { ACTIVITIES } from "@/lib/schema/activities";
 
 const primary = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", label: "Home" },
   { href: "/log", label: "Log today" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/insights", label: "Insights" },
   { href: "/friends", label: "Friends" },
   { href: "/compare", label: "Compare" },

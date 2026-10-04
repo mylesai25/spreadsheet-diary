@@ -279,6 +279,17 @@ class CalendarMonth {
   final List<CalendarDay> days;
 }
 
+/// /api/calendar — the home screen.
+class CalendarPage {
+  CalendarPage.fromJson(Map<String, dynamic> j)
+      : calendar = CalendarMonth.fromJson(j['calendar'] as Map<String, dynamic>),
+        streak = (j['streak'] as num? ?? 0).toInt(),
+        daysLogged = (j['daysLogged'] as num? ?? 0).toInt(),
+        missingDays = (j['missingDays'] as num? ?? 0).toInt();
+  final CalendarMonth calendar;
+  final int streak, daysLogged, missingDays;
+}
+
 class WeekDay {
   WeekDay(this.date, this.logged, this.hex);
   final String date;

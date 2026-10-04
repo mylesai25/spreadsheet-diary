@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import '../models/models.dart';
 import '../theme.dart';
 
+/// Drop focus so the on-screen keyboard (and any suggestion list) goes away.
+void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
 /// Field renderers shared by the daily log and activity forms.
 /// Values are always strings (what the sheet stores): "TRUE"/"FALSE", "HH:MM", "A, B, C".
 
@@ -102,7 +105,8 @@ class _SyncedTextState extends State<_SyncedText> {
 
   @override
   Widget build(BuildContext context) => TextField(
-        controller: _c, keyboardType: widget.keyboardType, inputFormatters: widget.formatters, decoration: widget.decoration, maxLines: widget.maxLines, textAlign: widget.textAlign, onChanged: widget.onChanged);
+        controller: _c, keyboardType: widget.keyboardType, inputFormatters: widget.formatters, decoration: widget.decoration, maxLines: widget.maxLines, textAlign: widget.textAlign,
+        textInputAction: widget.maxLines > 1 ? TextInputAction.newline : TextInputAction.done, onSubmitted: (_) => _dismissKeyboard(), onChanged: widget.onChanged);
 }
 
 class NumberField extends StatelessWidget {
@@ -207,12 +211,12 @@ class SelectField extends StatelessWidget {
           optionsBuilder: (t) {
             final q = t.text.trim().toLowerCase();
             final list = q.isEmpty ? options : options.where((o) => o.toLowerCase().contains(q)).toList();
-            return list.take(12);
+            return list.take(3);   // three at most: the list must never swallow the form
           },
-          onSelected: onChanged,
+          onSelected: (v) { onChanged(v); _dismissKeyboard(); },
           fieldViewBuilder: (context, controller, focus, onSubmit) {
             if (controller.text != value && !focus.hasFocus) controller.text = value;
-            return TextField(controller: controller, focusNode: focus, decoration: const InputDecoration(hintText: 'Type or pick…'), onChanged: onChanged, onSubmitted: (_) => onSubmit());
+            return TextField(controller: controller, focusNode: focus, decoration: const InputDecoration(hintText: 'Type or pick…'), textInputAction: TextInputAction.done, onChanged: onChanged, onSubmitted: (_) => _dismissKeyboard());
           },
           optionsViewBuilder: (context, onSelected, opts) => Align(
             alignment: Alignment.topLeft,
@@ -284,13 +288,14 @@ class _MultiFieldState extends State<MultiField> {
             optionsBuilder: (t) {
               final q = t.text.trim().toLowerCase();
               final avail = widget.options.where((o) => !tokens.contains(o));
-              return (q.isEmpty ? avail : avail.where((o) => o.toLowerCase().contains(q))).take(10);
+              return (q.isEmpty ? avail : avail.where((o) => o.toLowerCase().contains(q))).take(3);
             },
-            onSelected: _add,
+            onSelected: (v) { _add(v); _dismissKeyboard(); },
             fieldViewBuilder: (context, controller, focus, onSubmit) => TextField(
               controller: controller, focusNode: focus,
               decoration: InputDecoration(hintText: 'Add…', suffixIcon: IconButton(icon: const Icon(Icons.add), onPressed: () => _add(controller.text))),
-              onSubmitted: (v) { _add(v); focus.requestFocus(); },
+              textInputAction: TextInputAction.done,
+              onSubmitted: (v) { _add(v); _dismissKeyboard(); },
             ),
             optionsViewBuilder: (context, onSelected, opts) => Align(
               alignment: Alignment.topLeft,

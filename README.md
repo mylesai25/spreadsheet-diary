@@ -19,7 +19,9 @@ It reads and writes the Google Sheet directly — the sheet stays the source of 
   appear when you usually wear one in that weather (≥60% of similar days); socks follow the shoe (none with sandals).
   "Wear this" fills all the outfit fields; **↻ New ideas** gives a different set for the same weather (pieces already
   shown are set aside and the ranking reshuffled; resets when the weather changes).
-- **Dashboard** (`/`) — stat tiles and charts over 7d / 30d / 90d / YTD / all: sleep, fun & productivity,
+- **Home** (`/`) — the month calendar: one circle per day filled with the shirt color worn, fun meter inside, dashed for
+  unlogged days, "+" on today; pick a day for its summary and a link into the entry. `/api/calendar?month=YYYY-MM` serves it.
+- **Dashboard** (`/dashboard`) — stat tiles and charts over 7d / 30d / 90d / YTD / all: sleep, fun & productivity,
   steps, gym days, cooked vs. ate out, drinks, golf, resting HR, shirt colors, sky, cities, people, cuisines…
 - **Insights** (`/insights`) — the charts from the old `Diary_Graphs` Colab notebook, live: year calendars
   (shirt color / shade, pants, went outside, gym, cooked, alcohol, sick, sky), shades of green worn, most-worn
