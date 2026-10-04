@@ -1,6 +1,8 @@
 /// Plain data classes mirroring the Next.js API payloads.
 library;
 
+import 'package:flutter/material.dart' show Color;
+
 String _s(dynamic v) => v == null ? '' : v.toString();
 Map<String, String> _strMap(dynamic m) => m == null ? {} : (m as Map).map((k, v) => MapEntry(k.toString(), _s(v)));
 double? _d(dynamic v) => v == null ? null : (v is num ? v.toDouble() : double.tryParse(v.toString()));
@@ -22,11 +24,12 @@ class ShowIf {
 }
 
 class Field {
-  Field({required this.key, this.label, required this.type, this.min, this.max, this.step, this.unit, this.hint, this.closet, this.showIf, this.options = const []});
+  Field({required this.key, this.label, required this.type, this.min, this.max, this.step, this.stepper = false, this.unit, this.hint, this.closet, this.showIf, this.options = const []});
   final String key;
   final String? label;
   final FieldType type;
   final double? min, max, step;
+  final bool stepper;
   final String? unit, hint, closet;
   final ShowIf? showIf;
   final List<String> options;
@@ -34,7 +37,7 @@ class Field {
 
   factory Field.fromJson(Map<String, dynamic> j) => Field(
         key: _s(j['key']), label: j['label'] as String?, type: _type(j['type']),
-        min: _d(j['min']), max: _d(j['max']), step: _d(j['step']), unit: j['unit'] as String?, hint: j['hint'] as String?, closet: j['closet'] as String?,
+        min: _d(j['min']), max: _d(j['max']), step: _d(j['step']), stepper: j['stepper'] == true, unit: j['unit'] as String?, hint: j['hint'] as String?, closet: j['closet'] as String?,
         showIf: j['showIf'] == null ? null : ShowIf(_s(j['showIf']['key']), _s(j['showIf']['equals'])),
         options: (j['options'] as List?)?.map(_s).toList() ?? const [],
       );
@@ -83,8 +86,9 @@ class ClosetItem {
 class DailyData {
   DailyData({
     required this.date, required this.today, required this.values, required this.defaults, required this.prev, this.prevDate,
-    required this.options, required this.closet, required this.isLogged, required this.loggedDates, required this.storeKind, this.weatherNote, this.outfits,
+    required this.options, required this.closet, required this.isLogged, required this.loggedDates, required this.storeKind, this.weatherNote, this.outfits, this.week = const [],
   });
+  final List<WeekDay> week;
   final OutfitSuggestions? outfits;
   final String date, today, storeKind;
   final Map<String, String> values, defaults, prev;
@@ -100,6 +104,7 @@ class DailyData {
         options: (j['options'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map(_s).toList())),
         closet: j['closet'] == null ? const {} : (j['closet'] as Map).map((k, v) => MapEntry(k.toString(), (v as List).map((e) => ClosetItem.fromJson(e as Map<String, dynamic>)).toList())),
         isLogged: j['isLogged'] == true, loggedDates: (j['loggedDates'] as List).map(_s).toList(), storeKind: _s(j['storeKind']),
+        week: (j['week'] as List? ?? []).map((e) => WeekDay.fromJson(e as Map<String, dynamic>)).toList(),
         outfits: j['outfits'] == null ? null : OutfitSuggestions.fromJson(j['outfits'] as Map<String, dynamic>),
       );
 }
@@ -244,9 +249,56 @@ class ClosetStats {
       );
 }
 
+/// A day on the home calendar: shirt color is the fill, fun meter the number.
+class CalendarDay {
+  CalendarDay.fromJson(Map<String, dynamic> j)
+      : date = _s(j['date']),
+        logged = j['logged'] == true,
+        future = j['future'] == true,
+        fun = _d(j['fun']),
+        hoursSlept = _d(j['hoursSlept']),
+        sleepQuality = _d(j['sleepQuality']),
+        productivity = _d(j['productivity']),
+        steps = _d(j['steps']),
+        shirtName = (j['shirt'] as Map?)?['name'] as String?,
+        shirtHex = (j['shirt'] as Map?)?['hex'] as String?;
+  final String date;
+  final bool logged, future;
+  final double? fun, hoursSlept, sleepQuality, productivity, steps;
+  final String? shirtName, shirtHex;
+  int get day => int.parse(date.substring(8, 10));
+}
+
+class CalendarMonth {
+  CalendarMonth.fromJson(Map<String, dynamic> j)
+      : month = _s(j['month']),
+        label = _s(j['label']),
+        today = _s(j['today']),
+        days = (j['days'] as List? ?? []).map((e) => CalendarDay.fromJson(e as Map<String, dynamic>)).toList();
+  final String month, label, today;
+  final List<CalendarDay> days;
+}
+
+class WeekDay {
+  WeekDay(this.date, this.logged, this.hex);
+  final String date;
+  final bool logged;
+  final String? hex;
+  factory WeekDay.fromJson(Map<String, dynamic> j) => WeekDay(_s(j['date']), j['logged'] == true, j['hex'] as String?);
+}
+
+/// "#4ade80" → Color.
+Color hexColor(String? hex, [Color fallback = const Color(0xFF4ADE80)]) {
+  if (hex == null || hex.length < 7) return fallback;
+  final v = int.tryParse(hex.substring(1, 7), radix: 16);
+  return v == null ? fallback : Color(0xFF000000 | v);
+}
+
 class Dashboard {
   Dashboard({required this.range, required this.start, required this.end, required this.daysLogged, required this.missingDays, required this.tiles, required this.days, required this.weeks,
-      required this.shirtColors, required this.sky, required this.wakeCities, required this.people, required this.cuisines, required this.restaurants, required this.golf});
+      required this.shirtColors, required this.sky, required this.wakeCities, required this.people, required this.cuisines, required this.restaurants, required this.golf, this.calendar, this.streak = 0});
+  final CalendarMonth? calendar;
+  final int streak;
   final String range, start, end;
   final int daysLogged, missingDays;
   final List<Tile> tiles;
@@ -264,6 +316,7 @@ class Dashboard {
       weeks: (j['weeks'] as List).map((e) => WeekPoint.fromJson(e as Map<String, dynamic>)).toList(),
       shirtColors: counts('shirtColors'), sky: counts('sky'), wakeCities: counts('wakeCities'), people: counts('people'), cuisines: counts('cuisines'), restaurants: counts('restaurants'),
       golf: (j['golf'] as List? ?? []).map((e) => GolfRound.fromJson(e as Map<String, dynamic>)).toList(),
+      calendar: j['calendar'] == null ? null : CalendarMonth.fromJson(j['calendar'] as Map<String, dynamic>), streak: (j['streak'] as num? ?? 0).toInt(),
     );
   }
 }

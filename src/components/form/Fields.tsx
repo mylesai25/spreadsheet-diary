@@ -36,9 +36,21 @@ export function Rating({ value, onChange, max = 10, min = 1 }: { value: string; 
   );
 }
 
-export function NumberField({ value, onChange, min, max, step, unit, placeholder }: {
-  value: string; onChange: (v: string) => void; min?: number; max?: number; step?: number; unit?: string; placeholder?: string;
+export function NumberField({ value, onChange, min, max, step, unit, placeholder, stepper }: {
+  value: string; onChange: (v: string) => void; min?: number; max?: number; step?: number; unit?: string; placeholder?: string; stepper?: boolean;
 }) {
+  if (stepper) {
+    const n = Number(value) || 0;
+    const clamp = (x: number) => String(Math.max(min ?? -Infinity, Math.min(max ?? Infinity, x)));
+    const btn = "btn-ghost !px-0 h-10 w-12 shrink-0 text-lg font-bold";
+    return (
+      <div className="flex items-center gap-1.5">
+        <button type="button" className={btn} aria-label="Decrease" onClick={() => onChange(clamp(n - (step ?? 1)))}>−</button>
+        <input type="number" inputMode="numeric" className="control text-center" value={value} min={min} max={max} step={step ?? 1} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        <button type="button" className={btn} aria-label="Increase" onClick={() => onChange(clamp(n + (step ?? 1)))}>+</button>
+      </div>
+    );
+  }
   return (
     <div className="control flex items-center gap-2 py-0">
       <input type="number" inputMode="decimal" className="min-w-0 flex-1 bg-transparent py-2 outline-none" value={value}

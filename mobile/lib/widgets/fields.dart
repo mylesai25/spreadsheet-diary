@@ -42,37 +42,46 @@ class RatingField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final n = int.tryParse(value);
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        for (var k = min; k <= max; k++)
-          ChoiceChip(
-            label: Text('$k'),
-            selected: n == k,
-            showCheckmark: false,
-            selectedColor: Fig.neon,
-            labelStyle: TextStyle(color: n == k ? Fig.paper : cs.onSurface, fontWeight: n == k ? FontWeight.w700 : FontWeight.w500),
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            onSelected: (_) => onChanged(n == k ? '' : '$k'),
-          ),
-      ],
-    );
+    final all = [for (var k = min; k <= max; k++) k];
+    const perRow = 5;
+    return Column(children: [
+      for (var r = 0; r < all.length; r += perRow)
+        Padding(
+          padding: EdgeInsets.only(top: r == 0 ? 0 : 6),
+          child: Row(children: [
+            for (var i = r; i < r + perRow; i++) ...[
+              if (i > r) const SizedBox(width: 6),
+              Expanded(
+                child: i < all.length
+                    ? Material(
+                        color: n == all[i] ? Fig.neon : Fig.surface2,
+                        shape: const StadiumBorder(),
+                        child: InkWell(
+                          customBorder: const StadiumBorder(),
+                          onTap: () => onChanged(n == all[i] ? '' : '${all[i]}'),
+                          child: SizedBox(height: 40, child: Center(child: Text('${all[i]}', style: TextStyle(color: n == all[i] ? Fig.paper : Fig.ink, fontWeight: n == all[i] ? FontWeight.w800 : FontWeight.w500, fontSize: 15)))),
+                        ),
+                      )
+                    : const SizedBox(),
+              ),
+            ],
+          ]),
+        ),
+    ]);
   }
 }
 
 /// TextField that keeps its controller in sync with an externally-managed value.
 class _SyncedText extends StatefulWidget {
-  const _SyncedText({required this.value, required this.onChanged, this.keyboardType, this.formatters, this.decoration, this.maxLines = 1});
+  const _SyncedText({required this.value, required this.onChanged, this.keyboardType, this.formatters, this.decoration, this.maxLines = 1, this.textAlign = TextAlign.start});
   final String value;
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? formatters;
   final InputDecoration? decoration;
   final int maxLines;
+  final TextAlign textAlign;
   @override
   State<_SyncedText> createState() => _SyncedTextState();
 }
@@ -93,21 +102,43 @@ class _SyncedTextState extends State<_SyncedText> {
 
   @override
   Widget build(BuildContext context) => TextField(
-        controller: _c, keyboardType: widget.keyboardType, inputFormatters: widget.formatters, decoration: widget.decoration, maxLines: widget.maxLines, onChanged: widget.onChanged);
+        controller: _c, keyboardType: widget.keyboardType, inputFormatters: widget.formatters, decoration: widget.decoration, maxLines: widget.maxLines, textAlign: widget.textAlign, onChanged: widget.onChanged);
 }
 
 class NumberField extends StatelessWidget {
-  const NumberField({super.key, required this.value, required this.onChanged, this.unit, this.hint});
+  const NumberField({super.key, required this.value, required this.onChanged, this.unit, this.hint, this.min, this.max, this.step, this.stepper = false});
   final String value;
   final String? unit, hint;
+  final double? min, max, step;
+  final bool stepper;
   final ValueChanged<String> onChanged;
+
+  Widget _stepBtn(IconData icon, VoidCallback onTap) => SizedBox(
+        width: 48, height: 48,
+        child: OutlinedButton(onPressed: onTap, style: OutlinedButton.styleFrom(padding: EdgeInsets.zero), child: Icon(icon, size: 20, color: Fig.ink)),
+      );
+
   @override
-  Widget build(BuildContext context) => _SyncedText(
+  Widget build(BuildContext context) {
+    if (stepper) {
+      final n = double.tryParse(value) ?? 0;
+      final inc = step ?? 1;
+      String fmt(double v) { final c = v.clamp(min ?? double.negativeInfinity, max ?? double.infinity); return c % 1 == 0 ? c.toInt().toString() : c.toString(); }
+      return Row(children: [
+        _stepBtn(Icons.remove, () => onChanged(fmt(n - inc))),
+        const SizedBox(width: 6),
+        Expanded(child: _SyncedText(value: value, onChanged: onChanged, keyboardType: const TextInputType.numberWithOptions(decimal: true), formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))], decoration: InputDecoration(suffixText: unit, helperText: hint, helperMaxLines: 2), textAlign: TextAlign.center)),
+        const SizedBox(width: 6),
+        _stepBtn(Icons.add, () => onChanged(fmt(n + inc))),
+      ]);
+    }
+    return _SyncedText(
         value: value, onChanged: onChanged,
         keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: false),
         formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]'))],
         decoration: InputDecoration(suffixText: unit, helperText: hint, helperMaxLines: 2),
       );
+  }
 }
 
 class TextInputField extends StatelessWidget {
@@ -375,7 +406,7 @@ class FieldWidget extends StatelessWidget {
       case FieldType.rating:
         input = RatingField(value: value, min: field.min?.toInt() ?? 1, max: field.max?.toInt() ?? 10, onChanged: onChanged);
       case FieldType.number:
-        input = NumberField(value: value, unit: field.unit, hint: field.hint, onChanged: onChanged);
+        input = NumberField(value: value, unit: field.unit, hint: field.hint, min: field.min, max: field.max, step: field.step, stepper: field.stepper, onChanged: onChanged);
       case FieldType.time:
         input = TimeField(value: value, onChanged: onChanged);
       case FieldType.date:

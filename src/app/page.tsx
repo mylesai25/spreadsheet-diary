@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { buildDashboard, RANGES, type Range } from "@/lib/metrics";
+import { buildDashboard, isValidMonth, RANGES, type Range } from "@/lib/metrics";
+import { HomeCalendar } from "@/components/Calendar";
 import { formatShortDate, todayISO } from "@/lib/dates";
 import { ChartCard, DayBars, GolfChart, RankBars, Tile, TimeLines, WeekBars } from "@/components/charts/Charts";
 import { buildClosetStats } from "@/lib/closetStats";
@@ -7,11 +8,11 @@ import { ClosetStatsView } from "@/components/ClosetStatsView";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string; view?: string }> }) {
-  const { range: q, view } = await searchParams;
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ range?: string; view?: string; month?: string }> }) {
+  const { range: q, view, month } = await searchParams;
   const range: Range = RANGES.some((r) => r.key === q) ? (q as Range) : "30d";
   if (view === "closet") return <ClosetPage />;
-  const d = await buildDashboard(range);
+  const d = await buildDashboard(range, isValidMonth(month) ? month : undefined);
   const today = todayISO();
   const weekly = d.days.length > 60;
 
@@ -26,11 +27,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {d.storeKind === "csv" && " · local CSV mode"}
           </p>
         </div>
-        <div className="flex w-full items-center gap-2 sm:w-auto">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
           <RangeTabs range={range} />
           <Link href="/log" className="btn-primary ml-auto shrink-0 sm:ml-0">Log today</Link>
         </div>
       </div>
+
+      {/* Home calendar: shirt color per day */}
+      <HomeCalendar cal={d.calendar} range={range} streak={d.streak} />
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

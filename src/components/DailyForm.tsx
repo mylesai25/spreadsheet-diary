@@ -160,7 +160,7 @@ export function DailyForm({ data }: { data: DailyPageData }) {
     switch (f.type) {
       case "bool": return <FieldRow key={f.key} label={labelEl}><Toggle value={v} onChange={(x) => set(f.key, x)} /></FieldRow>;
       case "rating": return <FieldRow key={f.key} label={labelEl} wide><Rating value={v} min={f.min} max={f.max} onChange={(x) => set(f.key, x)} /></FieldRow>;
-      case "number": return <FieldRow key={f.key} label={labelEl} hint={f.hint}><NumberField value={v} min={f.min} max={f.max} step={f.step} unit={f.unit} onChange={(x) => set(f.key, x)} /></FieldRow>;
+      case "number": return <FieldRow key={f.key} label={labelEl} hint={f.hint}><NumberField value={v} min={f.min} max={f.max} step={f.step} unit={f.unit} stepper={f.stepper} onChange={(x) => set(f.key, x)} /></FieldRow>;
       case "time": return <FieldRow key={f.key} label={labelEl}><TimeField value={v} onChange={(x) => set(f.key, x)} /></FieldRow>;
       case "textarea": return <FieldRow key={f.key} label={labelEl} wide><TextArea value={v} onChange={(x) => set(f.key, x)} /></FieldRow>;
       case "text": return <FieldRow key={f.key} label={labelEl}><TextField value={v} onChange={(x) => set(f.key, x)} /></FieldRow>;

@@ -3,6 +3,7 @@ import { loadDaily } from "@/lib/daily";
 import { addDays, isValidISODate, todayISO } from "@/lib/dates";
 import { DailyForm } from "@/components/DailyForm";
 import { DateNav } from "@/components/DateNav";
+import { WeekStrip } from "@/components/WeekStrip";
 
 export const metadata: Metadata = { title: "Log" };
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function LogPage({ searchParams }: { searchParams: Promise<
   return (
     <>
       <DateNav date={date} today={today} isLogged={data.isLogged} missing={missing} />
+      <WeekStrip week={data.week} date={date} today={today} />
       <DailyForm key={date} data={data} />
     </>
   );

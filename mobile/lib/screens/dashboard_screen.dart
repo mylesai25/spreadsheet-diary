@@ -6,6 +6,8 @@ import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import '../widgets/bars.dart';
+import '../widgets/home_calendar.dart';
+import 'log_screen.dart';
 
 const _ranges = [('7d', '7 days'), ('30d', '30 days'), ('90d', '90 days'), ('ytd', 'This year'), ('all', 'All')];
 
@@ -18,6 +20,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String _range = '30d';
+  String? _month;   // null = this month
   late Future<Dashboard> _future;
   bool _closet = false;
   Future<ClosetStats>? _closetFuture;
@@ -28,7 +31,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _future = _load();
   }
 
-  Future<Dashboard> _load() => ApiScope.api(context).dashboard(_range);
+  Future<Dashboard> _load() => ApiScope.api(context).dashboard(_range, month: _month);
+  void _setMonth(String m) => setState(() { _month = m; _future = _load(); });
+  void _openDay(String date) => Navigator.push(context, MaterialPageRoute(builder: (_) => LogScreen(initialDate: date)));
 
   void _setRange(String r) => setState(() { _closet = false; _range = r; _future = _load(); });
   void _showCloset() => setState(() { _closet = true; _closetFuture ??= ApiScope.api(context).closetStats(); });
@@ -125,6 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Text('${_fmtDate(d.start)} – ${_fmtDate(d.end)} · ${d.daysLogged} days logged${d.missingDays > 0 ? ' · ${d.missingDays} missing' : ''}', style: Fig.small),
                 ),
+                if (d.calendar != null) HomeCalendar(cal: d.calendar!, streak: d.streak, onMonth: _setMonth, onOpen: _openDay),
                 _tiles(d.tiles),
                 const SizedBox(height: 12),
                 FigCard(title: 'Sleep', sub: 'Hours slept with 7-day average', child: _sleepChart(d)),

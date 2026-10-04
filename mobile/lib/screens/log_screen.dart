@@ -7,16 +7,19 @@ import '../models/models.dart';
 import '../reminders.dart';
 import '../theme.dart';
 import '../widgets/fields.dart';
+import '../widgets/home_calendar.dart';
 
 /// Daily Overview entry: the same sectioned form as the web app, driven by /api/schema.
 class LogScreen extends StatefulWidget {
-  const LogScreen({super.key});
+  const LogScreen({super.key, this.initialDate});
+  /// Open on this day instead of today (used when a calendar day is tapped).
+  final String? initialDate;
   @override
   State<LogScreen> createState() => _LogScreenState();
 }
 
 class _LogScreenState extends State<LogScreen> {
-  String _date = DateTime.now().toIso8601String().substring(0, 10);
+  late String _date = widget.initialDate ?? DateTime.now().toIso8601String().substring(0, 10);
   List<Section>? _sections;
   DailyData? _data;
   Map<String, List<ClosetItem>> _closet = {};
@@ -198,6 +201,7 @@ class _LogScreenState extends State<LogScreen> {
               ? _ErrorView(error: _error!, onRetry: _load)
               : Column(
                   children: [
+                    if (_data != null && _data!.week.isNotEmpty) _WeekStrip(week: _data!.week, date: _date, today: today, onPick: _goTo),
                     SizedBox(
                       height: 44,
                       child: ListView(
@@ -300,17 +304,33 @@ class _LogScreenState extends State<LogScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(item.group!.title, style: const TextStyle(color: Fig.neon, fontSize: 13, fontWeight: FontWeight.w800)),
-                        for (final f in item.group!.fields) if (_visible(f)) _field(f),
+                        ..._fields(item.group!.fields),
                       ],
                     ),
                   )
-                else if (_visible(item.field!))
-                  _field(item.field!),
+                else
+                  ..._fields([item.field!]),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Visible fields in order; consecutive yes/no toggles share a row (Injured · Sick), like the design.
+  List<Widget> _fields(List<Field> fields) {
+    final out = <Widget>[];
+    final vis = fields.where(_visible).toList();
+    for (var i = 0; i < vis.length; i++) {
+      final f = vis[i];
+      if (f.type == FieldType.bool && i + 1 < vis.length && vis[i + 1].type == FieldType.bool) {
+        out.add(Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: _field(f)), const SizedBox(width: 12), Expanded(child: _field(vis[i + 1]))]));
+        i++;
+      } else {
+        out.add(_field(f));
+      }
+    }
+    return out;
   }
 
   Widget _field(Field f) => Padding(
@@ -325,6 +345,53 @@ class _LogScreenState extends State<LogScreen> {
           onPatch: _patch,
         ),
       );
+}
+
+const _dow = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/// Sunday–Saturday around the open day: shirt-colored dots for logged days, dashed for empty, "+" on today.
+class _WeekStrip extends StatelessWidget {
+  const _WeekStrip({required this.week, required this.date, required this.today, required this.onPick});
+  final List<WeekDay> week;
+  final String date, today;
+  final ValueChanged<String> onPick;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 2),
+        child: Row(children: [
+          for (var i = 0; i < week.length; i++)
+            Expanded(child: _day(week[i], i)),
+        ]),
+      );
+
+  Widget _day(WeekDay d, int i) {
+    final future = d.date.compareTo(today) > 0, isToday = d.date == today, sel = d.date == date;
+    final day = int.parse(d.date.substring(8, 10));
+    final label = day == 1 ? DateFormat('MMM d').format(DateTime.parse(d.date)) : '$day';
+    final Widget dot = d.logged
+        ? Container(width: 30, height: 30, decoration: BoxDecoration(shape: BoxShape.circle, color: hexColor(d.hex)))
+        : isToday
+            ? Container(width: 30, height: 30, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Fig.neon, width: 2)), child: const Icon(Icons.add, size: 16, color: Fig.neon))
+            : CustomPaint(size: const Size(30, 30), painter: DashedCircle(color: future ? Fig.line : Fig.muted));
+    return Opacity(
+      opacity: future ? 0.4 : 1,
+      child: InkWell(
+        onTap: future ? null : () => onPick(d.date),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: sel ? Fig.neon : Colors.transparent), color: sel ? Fig.accentSoft.withValues(alpha: 0.4) : null),
+          child: Column(children: [
+            Text(_dow[i], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: sel ? Fig.neon : Fig.ink2)),
+            const SizedBox(height: 4),
+            dot,
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: isToday ? FontWeight.w700 : FontWeight.w400, color: isToday ? Fig.neon : Fig.ink2)),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {

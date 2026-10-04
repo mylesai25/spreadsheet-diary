@@ -14,6 +14,8 @@ export interface Field {
   min?: number;
   max?: number;
   step?: number;
+  /** Render − / + buttons around the number (counts like naps or drinks). */
+  stepper?: boolean;
   unit?: string;
   hint?: string;
   closet?: ClosetKind;

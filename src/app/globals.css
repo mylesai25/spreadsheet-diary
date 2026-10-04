@@ -47,6 +47,7 @@ html { scroll-padding-top: 7rem; background: var(--page); }
 body {
   background: var(--page);
   color: var(--ink);
+  overflow-x: clip;   /* phones: a too-wide widget scrolls itself, never the page */
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
@@ -80,8 +81,8 @@ body {
 .btn-ghost:hover { border-color: var(--neon); color: var(--neon); }
 .btn-ghost:disabled { opacity: 0.5; }
 
-.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--surface-2); }
-.seg > button, .seg > a { white-space: nowrap; min-width: 2.25rem; padding: 0.3rem 0.7rem; font-size: 0.875rem; color: var(--ink-2); border-radius: 6px; transition: background-color .15s, color .15s; }
+.seg { display: inline-flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; gap: 2px; padding: 3px; border-radius: 8px; background: var(--surface-2); }
+.seg > button, .seg > a { flex: none; white-space: nowrap; min-width: 2.25rem; padding: 0.3rem 0.7rem; font-size: 0.875rem; color: var(--ink-2); border-radius: 6px; transition: background-color .15s, color .15s; }
 .seg > button:hover, .seg > a:hover { color: var(--ink); }
 .seg > [aria-pressed="true"], .seg > [aria-checked="true"] { background: var(--neon); color: var(--accent-ink); font-weight: 700; }
 

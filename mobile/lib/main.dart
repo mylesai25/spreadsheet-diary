@@ -60,7 +60,7 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
-  int _tab = 0;
+  int _tab = 1;   // home is the calendar on the Dashboard tab
 
   @override
   Widget build(BuildContext context) {

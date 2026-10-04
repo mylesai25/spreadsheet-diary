@@ -2,6 +2,7 @@ import "server-only";
 import { DAILY_SHEET, getStore, type SheetData } from "./store";
 import { addDays, formatShortDate, todayISO, weekStart } from "./dates";
 import { isLoggedRow, rowToRecord } from "./daily";
+import { colorFor } from "./colors";
 
 export type Range = "7d" | "30d" | "90d" | "ytd" | "all";
 export const RANGES: { key: Range; label: string }[] = [
@@ -44,6 +45,20 @@ export interface GolfRound { date: string; course: string; score: number; par: n
 
 export interface Tile { label: string; value: string; sub?: string }
 
+/** One cell of the home calendar: the day's shirt color is the fill, the fun meter the number inside. */
+export interface CalDay {
+  date: string;
+  logged: boolean;
+  future: boolean;
+  fun: number | null;
+  hoursSlept: number | null;
+  sleepQuality: number | null;
+  productivity: number | null;
+  steps: number | null;
+  shirt: { name: string; hex: string } | null;
+}
+export interface CalendarMonth { month: string; label: string; today: string; days: CalDay[] }
+
 export interface Dashboard {
   range: Range;
   start: string;
@@ -63,6 +78,8 @@ export interface Dashboard {
   golf: GolfRound[];
   storeKind: "sheets" | "csv";
   missingDays: number;
+  calendar: CalendarMonth;
+  streak: number;
 }
 
 const num = (v: string | undefined): number | null => {
@@ -101,7 +118,29 @@ function countTop(values: string[], top = 8): Count[] {
 const fmt1 = (n: number | null) => (n == null ? "—" : (Math.round(n * 10) / 10).toString());
 const fmtInt = (n: number | null) => (n == null ? "—" : Math.round(n).toLocaleString("en-US"));
 
-export async function buildDashboard(range: Range): Promise<Dashboard> {
+export const monthOf = (iso: string) => iso.slice(0, 7);
+export const isValidMonth = (m: string | null | undefined): m is string => !!m && /^\d{4}-(0[1-9]|1[0-2])$/.test(m);
+
+/** The month view: every day of `month`, filled from the whole sheet (not just the range). */
+export function buildCalendar(all: Record<string, string>[], month: string, today: string): CalendarMonth {
+  const byDate = new Map(all.map((r) => [r.Date, r]));
+  const [y, m] = month.split("-").map(Number);
+  const daysIn = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const days: CalDay[] = Array.from({ length: daysIn }, (_, i) => {
+    const date = `${month}-${String(i + 1).padStart(2, "0")}`;
+    const r = byDate.get(date);
+    const shirtName = r?.["Shirt Color Primary"] || r?.["Shirt Color Short"] || "";
+    return {
+      date, logged: !!r, future: date > today,
+      fun: num(r?.["Fun Meter (1-10)"]), hoursSlept: num(r?.["Hours slept"]), sleepQuality: num(r?.["Sleep Quality (1-10)"]), productivity: num(r?.["Productivity (1-10)"]), steps: num(r?.["Steps Taken"]),
+      shirt: r ? { name: shirtName || "No shirt logged", hex: shirtName ? colorFor(shirtName, "#4ade80") : "#4ade80" } : null,
+    };
+  });
+  const label = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  return { month, label, today, days };
+}
+
+export async function buildDashboard(range: Range, month?: string): Promise<Dashboard> {
   const store = getStore();
   const daily = await store.read("journal", DAILY_SHEET);
   const dateCol = daily.header.indexOf("Date");
@@ -183,6 +222,7 @@ export async function buildDashboard(range: Range): Promise<Dashboard> {
     mealRatings,
     videoGames: countTop(rows.flatMap((r) => tokens(r["Video games played"])), 8),
     golf, storeKind: store.kind, missingDays,
+    calendar: buildCalendar(all, isValidMonth(month) ? month : monthOf(today), today), streak,
   };
 }
 

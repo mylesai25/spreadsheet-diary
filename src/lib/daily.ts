@@ -1,6 +1,7 @@
 import "server-only";
 import { DAILY_SHEET, getStore, type SheetData } from "./store";
-import { addDays, isoToSerial, isValidISODate } from "./dates";
+import { addDays, isoToSerial, isValidISODate, weekStart } from "./dates";
+import { colorFor } from "./colors";
 import { DAILY_AUTO_COLUMNS, DAILY_FIELDS } from "./schema/daily";
 import { CLOSET, type ClosetItem, type ClosetItems } from "./schema/closet";
 import { claudeOutfitsEnabled, suggestOutfitsWithClaude } from "./outfitsClaude";
@@ -26,12 +27,16 @@ export interface DailyPageData {
   isLogged: boolean;
   /** ISO dates that have an entry, ascending. */
   loggedDates: string[];
+  /** Sunday–Saturday around `date`: logged days carry the shirt color worn. */
+  week: WeekDay[];
   storeKind: "sheets" | "csv";
   /** Where the prefilled weather came from (or why it couldn't be fetched). */
   weatherNote: string | null;
   /** Weather-aware outfit ideas from your own history. */
   outfits: OutfitSuggestions;
 }
+
+export interface WeekDay { date: string; logged: boolean; hex: string | null }
 
 const LOGGED_IGNORE = new Set([...DAILY_AUTO_COLUMNS]);
 
@@ -121,6 +126,16 @@ export async function loadDaily(date: string, { closet: includeCloset = true }: 
     options[f.key] = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v);
   }
 
+  const byDate = new Map(logged.map((x) => [x.date, x.r]));
+  const sunday = weekStart(date);
+  const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(sunday, i);
+    const r = byDate.get(d);
+    const rec = r ? rowToRecord(data, r) : null;
+    const shirt = rec?.["Shirt Color Primary"] || rec?.["Shirt Color Short"] || "";
+    return { date: d, logged: !!rec, hex: rec ? (shirt ? colorFor(shirt, "#4ade80") : "#4ade80") : null };
+  });
+
   const closet = await closetP;
   const eff = (k: string) => values[k] || defaults[k] || "";
   const toNum = (v: string) => (v === "" || Number.isNaN(Number(v)) ? null : Number(v));
@@ -131,7 +146,7 @@ export async function loadDaily(date: string, { closet: includeCloset = true }: 
     date, rowNumber, values, defaults, prev: prevRec,
     prevDate: before.length ? before[before.length - 1].date : null,
     options, closet: includeCloset ? closet : null, isLogged: loggedToday,
-    loggedDates, storeKind: store.kind, weatherNote, outfits,
+    loggedDates, week, storeKind: store.kind, weatherNote, outfits,
   };
 }
 
