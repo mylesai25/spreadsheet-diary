@@ -485,3 +485,114 @@ class FriendsData {
   final int daysLogged;
   final List<FriendProfile> friends;
 }
+
+/* ── /api/activity: the notebook's golf / climbing / skiing figures ── */
+
+class Slice {
+  Slice(this.name, this.value, this.color);
+  final String name;
+  final double value;
+  final Color color;
+  factory Slice.fromJson(Map<String, dynamic> j) => Slice(_s(j['name']), _d(j['value']) ?? 0, hexColor(j['color'] as String?));
+}
+
+class SeriesDef {
+  SeriesDef(this.key, this.name, this.color);
+  final String key, name;
+  final Color color;
+  factory SeriesDef.fromJson(Map<String, dynamic> j) => SeriesDef(_s(j['key']), _s(j['name']), hexColor(j['color'] as String?));
+}
+
+/// One point per session: running totals per series (row 0 is "before the first session").
+class CumRow {
+  CumRow(this.i, this.date, this.label, this.values);
+  final int i;
+  final String date, label;
+  final Map<String, double> values;
+  factory CumRow.fromJson(Map<String, dynamic> j) => CumRow(
+        (j['i'] as num).toInt(), _s(j['date']), _s(j['label']),
+        {for (final e in j.entries) if (e.value is num && e.key != 'i') e.key: (e.value as num).toDouble()},
+      );
+}
+
+class Cumulative {
+  Cumulative(this.rows, this.series, this.xLabel);
+  final List<CumRow> rows;
+  final List<SeriesDef> series;
+  final String xLabel;
+  factory Cumulative.fromJson(Map<String, dynamic> j) => Cumulative(
+        (j['rows'] as List).map((e) => CumRow.fromJson(e as Map<String, dynamic>)).toList(),
+        (j['series'] as List).map((e) => SeriesDef.fromJson(e as Map<String, dynamic>)).toList(),
+        _s(j['xLabel']),
+      );
+}
+
+class SendRate {
+  SendRate(this.grade, this.attempted, this.completed, this.rate, this.color);
+  final String grade;
+  final int attempted, completed;
+  final double? rate;
+  final Color color;
+  factory SendRate.fromJson(Map<String, dynamic> j) =>
+      SendRate(_s(j['grade']), (j['attempted'] as num? ?? 0).toInt(), (j['completed'] as num? ?? 0).toInt(), _d(j['rate']), hexColor(j['color'] as String?));
+}
+
+List<Tile> _tiles(dynamic l) => (l as List? ?? []).map((e) => Tile.fromJson(e as Map<String, dynamic>)).toList();
+List<Count> _counts(dynamic l) => (l as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList();
+List<Slice> _slices(dynamic l) => (l as List? ?? []).map((e) => Slice.fromJson(e as Map<String, dynamic>)).toList();
+
+class GolfStats {
+  GolfStats({required this.tiles, required this.outcomes, required this.cumulative, required this.putts, required this.courses, required this.scores18, required this.rounds, required this.note});
+  final List<Tile> tiles;
+  final List<Slice> outcomes;
+  final Cumulative cumulative;
+  final List<Count> putts, courses;
+  final List<GolfScore> scores18;
+  final int rounds;
+  final String note;
+  factory GolfStats.fromJson(Map<String, dynamic> j) => GolfStats(
+        tiles: _tiles(j['tiles']), outcomes: _slices(j['outcomes']), cumulative: Cumulative.fromJson(j['cumulative'] as Map<String, dynamic>),
+        putts: _counts(j['putts']), courses: _counts(j['courses']),
+        scores18: (j['scores18'] as List? ?? []).map((e) => GolfScore.fromJson(e as Map<String, dynamic>)).toList(),
+        rounds: (j['rounds'] as num? ?? 0).toInt(), note: _s(j['note']),
+      );
+}
+
+class ClimbStats {
+  ClimbStats({required this.tiles, required this.grades, required this.cumulative, required this.sendRate, required this.gyms, required this.sessions});
+  final List<Tile> tiles;
+  final List<Slice> grades;
+  final Cumulative cumulative;
+  final List<SendRate> sendRate;
+  final List<Count> gyms;
+  final int sessions;
+  factory ClimbStats.fromJson(Map<String, dynamic> j) => ClimbStats(
+        tiles: _tiles(j['tiles']), grades: _slices(j['grades']), cumulative: Cumulative.fromJson(j['cumulative'] as Map<String, dynamic>),
+        sendRate: (j['sendRate'] as List? ?? []).map((e) => SendRate.fromJson(e as Map<String, dynamic>)).toList(),
+        gyms: _counts(j['gyms']), sessions: (j['sessions'] as num? ?? 0).toInt(),
+      );
+}
+
+class SkiStats {
+  SkiStats({required this.tiles, required this.runs, required this.cumulative, required this.falls, required this.days});
+  final List<Tile> tiles;
+  final List<Slice> runs, falls;
+  final Cumulative cumulative;
+  final int days;
+  factory SkiStats.fromJson(Map<String, dynamic> j) => SkiStats(
+        tiles: _tiles(j['tiles']), runs: _slices(j['runs']), cumulative: Cumulative.fromJson(j['cumulative'] as Map<String, dynamic>),
+        falls: _slices(j['falls']), days: (j['days'] as num? ?? 0).toInt(),
+      );
+}
+
+class ActivityStats {
+  ActivityStats({required this.golf, required this.climb, required this.ski, required this.sportHours});
+  final GolfStats golf;
+  final ClimbStats climb;
+  final SkiStats ski;
+  final List<Count> sportHours;
+  factory ActivityStats.fromJson(Map<String, dynamic> j) => ActivityStats(
+        golf: GolfStats.fromJson(j['golf'] as Map<String, dynamic>), climb: ClimbStats.fromJson(j['climb'] as Map<String, dynamic>),
+        ski: SkiStats.fromJson(j['ski'] as Map<String, dynamic>), sportHours: _counts(j['sportHours']),
+      );
+}

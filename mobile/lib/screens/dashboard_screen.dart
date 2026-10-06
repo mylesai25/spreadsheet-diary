@@ -1,13 +1,73 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import '../widgets/activity_charts.dart';
 import '../widgets/bars.dart';
 
 const _ranges = [('7d', '7 days'), ('30d', '30 days'), ('90d', '90 days'), ('ytd', 'This year'), ('all', 'All')];
+
+/// The chart menu, grouped like the Diary_Graphs notebook (same ids as the web app's chartCatalog.ts).
+class _Cat {
+  const _Cat(this.key, this.label, this.icon);
+  final String key, label, icon;
+}
+
+class _Chart {
+  const _Chart(this.id, this.cat, this.title, [this.sub]);
+  final String id, cat, title;
+  final String? sub;
+}
+
+const _cats = [
+  _Cat('overview', 'Overview', '📓'), _Cat('sleep', 'Sleep & mood', '😴'), _Cat('fitness', 'Fitness', '💪'), _Cat('golf', 'Golf', '⛳'),
+  _Cat('climbing', 'Climbing', '🧗'), _Cat('skiing', 'Skiing', '⛷️'), _Cat('food', 'Food & drink', '🍜'), _Cat('wardrobe', 'Wardrobe', '👕'),
+  _Cat('people', 'People', '👥'), _Cat('travel', 'Travel & weather', '🚆'),
+];
+
+const _charts = [
+  _Chart('tiles', 'overview', 'Headline numbers', 'Days logged, sleep, fun, steps, gym, drinks, meals'),
+  _Chart('sleep', 'sleep', 'Sleep', 'Hours slept with 7-day average'),
+  _Chart('funProd', 'sleep', 'Fun & productivity', 'Daily self-ratings, 1–10'),
+  _Chart('steps', 'fitness', 'Steps'),
+  _Chart('gymWeeks', 'fitness', 'Gym days per week'),
+  _Chart('sportBubbles', 'fitness', 'Hours by sport', 'Circle area = time played'),
+  _Chart('golfTiles', 'golf', 'Golf numbers', 'Solo rounds (Regular / Wolf), like the notebook'),
+  _Chart('golfScores18', 'golf', '18-hole scores', 'Every solo 18-hole round, in order played'),
+  _Chart('golfToPar', 'golf', 'Score to par', 'Per round, over time'),
+  _Chart('golfOutcomes', 'golf', 'Hole outcomes', 'Birdies, pars, bogeys… across solo rounds'),
+  _Chart('golfCumulative', 'golf', 'Outcomes, round by round', 'Running count of each hole result'),
+  _Chart('golfPutts', 'golf', 'Putting', 'Holes by putt count'),
+  _Chart('golfCourses', 'golf', 'Courses played', 'Rounds per course'),
+  _Chart('climbTiles', 'climbing', 'Climbing numbers', 'Sessions, time on the wall, sends'),
+  _Chart('climbGrades', 'climbing', 'Climbs completed', 'By V-grade'),
+  _Chart('climbCumulative', 'climbing', 'Sends, session by session', 'Running count of completed climbs per grade'),
+  _Chart('climbSendRate', 'climbing', 'Send rate', 'Completed ÷ attempted, per grade'),
+  _Chart('climbGyms', 'climbing', 'Gyms', 'Sessions per gym'),
+  _Chart('skiTiles', 'skiing', 'Ski numbers', 'Days, hours, runs, falls'),
+  _Chart('skiRuns', 'skiing', 'Runs by difficulty', 'Green to double black'),
+  _Chart('skiCumulative', 'skiing', 'Runs, day by day', 'Running count of runs per difficulty'),
+  _Chart('skiFalls', 'skiing', 'Falls by difficulty', 'Where the wipeouts happen'),
+  _Chart('drinks', 'food', 'Drinks per week'),
+  _Chart('cuisines', 'food', 'Cuisines', 'Restaurant visits'),
+  _Chart('restaurants', 'food', 'Top restaurants', 'Visits'),
+  _Chart('shirtColors', 'wardrobe', 'Shirt colors', 'Days worn'),
+  _Chart('people', 'people', 'People seen most', 'Days together'),
+  _Chart('sky', 'travel', 'Sky', 'Days'),
+  _Chart('wakeCities', 'travel', 'Woke up in', 'Days per city'),
+];
+
+const _defaultCharts = [
+  'tiles', 'sleep', 'funProd', 'steps', 'gymWeeks', 'sportBubbles',
+  'golfTiles', 'golfScores18', 'golfOutcomes', 'golfCumulative',
+  'climbTiles', 'climbGrades', 'climbCumulative',
+  'drinks', 'shirtColors', 'people', 'sky',
+];
+const _kCharts = 'dash_charts';
 
 /// Key metrics from /api/dashboard: tiles + a handful of fl_chart charts, drawn like the Diary_Graphs figures.
 class DashboardScreen extends StatefulWidget {
@@ -18,17 +78,139 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String _range = '30d';
-  late Future<Dashboard> _future;
+  late Future<(Dashboard, ActivityStats)> _future;
   bool _closet = false;
   Future<ClosetStats>? _closetFuture;
+  Set<String> _selected = _defaultCharts.toSet();
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    SharedPreferences.getInstance().then((p) {
+      final saved = p.getStringList(_kCharts);
+      if (saved != null && mounted) setState(() => _selected = saved.where((id) => _charts.any((c) => c.id == id)).toSet());
+    });
   }
 
-  Future<Dashboard> _load() => ApiScope.api(context).dashboard(_range);
+  Future<(Dashboard, ActivityStats)> _load() async {
+    final api = ApiScope.api(context);
+    final r = await Future.wait([api.dashboard(_range), api.activityStats(_range)]);
+    return (r[0] as Dashboard, r[1] as ActivityStats);
+  }
+
+  void _select(Set<String> next) {
+    setState(() => _selected = next);
+    SharedPreferences.getInstance().then((p) => p.setStringList(_kCharts, next.toList()));
+  }
+
+  void _toggle(String id) => _select(_selected.contains(id) ? (_selected.toSet()..remove(id)) : (_selected.toSet()..add(id)));
+  List<_Chart> _inCat(String cat) => _charts.where((c) => c.cat == cat).toList();
+  int _catCount(String cat) => _inCat(cat).where((c) => _selected.contains(c.id)).length;
+  void _toggleCat(String cat) {
+    final ids = _inCat(cat).map((c) => c.id).toSet();
+    _select(_catCount(cat) > 0 ? _selected.difference(ids) : _selected.union(ids));
+  }
+
+  /// Category chips: tap to show or hide a whole section; the count shows how many of its figures are on.
+  Widget _catChips() => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(top: 4),
+        child: Row(children: [
+          for (final c in _cats)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: FilterChip(
+                label: Text('${c.icon} ${c.label} ${_catCount(c.key)}/${_inCat(c.key).length}'),
+                selected: _catCount(c.key) > 0, showCheckmark: false, onSelected: (_) => _toggleCat(c.key),
+              ),
+            ),
+          ActionChip(avatar: const Icon(Icons.tune, size: 16), label: const Text('Customize'), onPressed: _customize),
+        ]),
+      );
+
+  /// Bottom sheet with a checkbox for every chart.
+  Future<void> _customize() => showModalBottomSheet<void>(
+        context: context, isScrollControlled: true, useSafeArea: true,
+        builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+          void pick(Set<String> next) { _select(next); setSheet(() {}); }
+          return DraggableScrollableSheet(
+            expand: false, initialChildSize: 0.85, maxChildSize: 0.95,
+            builder: (ctx, scroll) => ListView(
+              controller: scroll, padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                Row(children: [
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Choose your charts', style: Fig.cardTitle), Text('${_selected.length} of ${_charts.length} on · saved on this phone', style: Fig.cardSub)])),
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+                ]),
+                Wrap(spacing: 6, children: [
+                  OutlinedButton(onPressed: () => pick(_charts.map((c) => c.id).toSet()), child: const Text('Show all')),
+                  OutlinedButton(onPressed: () => pick({}), child: const Text('Hide all')),
+                  OutlinedButton(onPressed: () => pick(_defaultCharts.toSet()), child: const Text('Reset')),
+                ]),
+                for (final cat in _cats) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 14, bottom: 2),
+                    child: Row(children: [
+                      Expanded(child: Text('${cat.icon} ${cat.label}', style: const TextStyle(color: Fig.ink, fontSize: 15, fontWeight: FontWeight.w800))),
+                      TextButton(onPressed: () => pick(_inCat(cat.key).map((c) => c.id).toSet()), child: const Text('only')),
+                      TextButton(onPressed: () { final ids = _inCat(cat.key).map((c) => c.id).toSet(); pick(_catCount(cat.key) > 0 ? _selected.difference(ids) : _selected.union(ids)); }, child: Text(_catCount(cat.key) > 0 ? 'none' : 'all')),
+                    ]),
+                  ),
+                  for (final c in _inCat(cat.key))
+                    CheckboxListTile(
+                      dense: true, contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, activeColor: Fig.neon,
+                      value: _selected.contains(c.id), onChanged: (_) => pick(_selected.contains(c.id) ? (_selected.toSet()..remove(c.id)) : (_selected.toSet()..add(c.id))),
+                      title: Text(c.title, style: const TextStyle(color: Fig.ink, fontSize: 14)), subtitle: c.sub == null ? null : Text(c.sub!, style: Fig.smallMuted, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                ],
+              ],
+            ),
+          );
+        }),
+      );
+
+  /// Draws one catalogue entry from the merged data.
+  Widget _chart(String id, Dashboard d, ActivityStats a) {
+    switch (id) {
+      case 'tiles': return _tiles(d.tiles);
+      case 'sleep': return _sleepChart(d);
+      case 'funProd': return _funChart(d);
+      case 'steps': return _stepsChart(d);
+      case 'gymWeeks': return _weekBars(d.weeks.map((w) => w.gymDays).toList(), d.weeks.map((w) => w.label).toList());
+      case 'sportBubbles': return BubblePack(a.sportHours);
+      case 'golfTiles': return TileRow(a.golf.tiles);
+      case 'golfScores18': return ScoreLine(a.golf.scores18);
+      case 'golfToPar': return d.golf.isEmpty ? const EmptyChart() : _golfChart(d);
+      case 'golfOutcomes': return DonutChart(a.golf.outcomes, unit: 'holes');
+      case 'golfCumulative': return CumulativeChart(a.golf.cumulative);
+      case 'golfPutts': return RankBars(a.golf.putts);
+      case 'golfCourses': return RankBars(a.golf.courses, labelWidth: 130);
+      case 'climbTiles': return TileRow(a.climb.tiles);
+      case 'climbGrades': return DonutChart(a.climb.grades, unit: 'climbs');
+      case 'climbCumulative': return CumulativeChart(a.climb.cumulative);
+      case 'climbSendRate': return SendRateBars(a.climb.sendRate);
+      case 'climbGyms': return RankBars(a.climb.gyms);
+      case 'skiTiles': return TileRow(a.ski.tiles);
+      case 'skiRuns': return DonutChart(a.ski.runs, unit: 'runs');
+      case 'skiCumulative': return CumulativeChart(a.ski.cumulative);
+      case 'skiFalls': return DonutChart(a.ski.falls, unit: 'falls');
+      case 'drinks': return _weekBars(d.weeks.map((w) => w.drinks).toList(), d.weeks.map((w) => w.label).toList());
+      case 'cuisines': return RankBars(d.cuisines);
+      case 'restaurants': return RankBars(d.restaurants, labelWidth: 130);
+      case 'shirtColors': return RankBars(d.shirtColors, colorByName: true);
+      case 'people': return RankBars(d.people);
+      case 'sky': return RankBars(d.sky);
+      case 'wakeCities': return RankBars(d.wakeCities);
+      default: return const EmptyChart();
+    }
+  }
+
+  String? _sub(_Chart c, Dashboard d, ActivityStats a) {
+    if (c.id == 'golfOutcomes' || c.id == 'golfPutts') return a.golf.note;
+    if (c.id == 'steps') return d.days.length > 60 ? 'Average per day, by week' : 'Per day';
+    return c.sub;
+  }
 
   void _setRange(String r) => setState(() { _closet = false; _range = r; _future = _load(); });
   void _showCloset() => setState(() { _closet = true; _closetFuture ??= ApiScope.api(context).closetStats(); });
@@ -111,33 +293,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(title: const Text('Dashboard'), actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh)]),
       body: _closet ? _closetBody() : RefreshIndicator(
         onRefresh: () async { setState(() => _future = _load()); await _future; },
-        child: FutureBuilder<Dashboard>(
+        child: FutureBuilder<(Dashboard, ActivityStats)>(
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
             if (snap.hasError) return ListView(children: [Padding(padding: const EdgeInsets.all(24), child: Text('Could not load: ${snap.error}'))]);
-            final d = snap.data!;
+            final (d, a) = snap.data!;
+            final sections = [for (final cat in _cats) (cat, _inCat(cat.key).where((c) => _selected.contains(c.id)).toList())].where((s) => s.$2.isNotEmpty).toList();
             return ListView(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
               children: [
                 _chips(),
+                _catChips(),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Text('${_fmtDate(d.start)} – ${_fmtDate(d.end)} · ${d.daysLogged} days logged${d.missingDays > 0 ? ' · ${d.missingDays} missing' : ''}', style: Fig.small),
                 ),
-                _tiles(d.tiles),
-                const SizedBox(height: 12),
-                FigCard(title: 'Sleep', sub: 'Hours slept with 7-day average', child: _sleepChart(d)),
-                FigCard(title: 'Fun & productivity', sub: 'Daily self-ratings, 1–10', child: _funChart(d)),
-                FigCard(title: 'Steps', sub: d.days.length > 60 ? 'Average per day, by week' : 'Per day', child: _stepsChart(d)),
-                FigCard(title: 'Gym days per week', child: _weekBars(d.weeks.map((w) => w.gymDays).toList(), d.weeks.map((w) => w.label).toList())),
-                FigCard(title: 'Drinks per week', child: _weekBars(d.weeks.map((w) => w.drinks).toList(), d.weeks.map((w) => w.label).toList())),
-                if (d.golf.isNotEmpty) FigCard(title: 'Golf', sub: 'Score to par per round', child: _golfChart(d)),
-                FigCard(title: 'Shirt colors', sub: 'Days worn', child: RankBars(d.shirtColors, colorByName: true)),
-                FigCard(title: 'People seen most', sub: 'Days together', child: RankBars(d.people)),
-                FigCard(title: 'Woke up in', sub: 'Days per city', child: RankBars(d.wakeCities)),
-                FigCard(title: 'Cuisines', sub: 'Restaurant visits', child: RankBars(d.cuisines)),
-                FigCard(title: 'Sky', sub: 'Days', child: RankBars(d.sky)),
+                if (sections.isEmpty)
+                  Card(child: Padding(padding: const EdgeInsets.all(28), child: Column(children: [
+                    const Text('No charts selected', style: Fig.small),
+                    const SizedBox(height: 10),
+                    FilledButton(onPressed: () => _select(_defaultCharts.toSet()), child: const Text('Show the default set')),
+                  ]))),
+                for (final (cat, charts) in sections) ...[
+                  FigHeading('${cat.icon} ${cat.label}'),
+                  for (final c in charts)
+                    FigCard(
+                      title: c.title, sub: _sub(c, d, a),
+                      trailing: IconButton(visualDensity: VisualDensity.compact, padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 28, minHeight: 28), tooltip: 'Hide', icon: const Icon(Icons.close, size: 16, color: Fig.muted), onPressed: () => _toggle(c.id)),
+                      child: _chart(c.id, d, a),
+                    ),
+                ],
               ],
             );
           },

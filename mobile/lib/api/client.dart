@@ -125,6 +125,7 @@ class ApiClient {
   Future<Dashboard> dashboard(String range, {String? month}) async => Dashboard.fromJson(await _get('/api/dashboard', {'range': range, if (month != null) 'month': month}));
   Future<CalendarPage> calendar({String? month}) async => CalendarPage.fromJson(await _get('/api/calendar', {if (month != null) 'month': month}));
   Future<ClosetStats> closetStats() async => ClosetStats.fromJson(await _get('/api/closet/stats'));
+  Future<ActivityStats> activityStats(String range) async => ActivityStats.fromJson(await _get('/api/activity', {'range': range}));
   Future<FriendsData> friends(String range) async => FriendsData.fromJson(await _get('/api/friends', {'range': range}));
   Future<List<ActivityInfo>> activities() async => ((await _get('/api/activities'))['activities'] as List).map((e) => ActivityInfo.fromJson(e as Map<String, dynamic>)).toList();
   Future<ActivityData> activity(String slug) async => ActivityData.fromJson(await _get('/api/activities/$slug'));
