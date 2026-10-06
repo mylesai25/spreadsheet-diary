@@ -37,12 +37,15 @@ export function Tip({ active, payload, label, fmt, title }: { active?: boolean; 
 }
 
 /** A framed figure: black panel, lime border, white bold title. */
-export function ChartCard({ title, sub, children, className = "" }: { title: string; sub?: string; children: React.ReactNode; className?: string }) {
+export function ChartCard({ title, sub, children, className = "", action }: { title: string; sub?: string; children: React.ReactNode; className?: string; action?: React.ReactNode }) {
   return (
     <section className={`card flex flex-col p-4 ${className}`}>
-      <header className="mb-3">
-        <h3 className="text-[15px] font-bold leading-tight">{title}</h3>
-        {sub && <p className="mt-0.5 text-xs text-ink-2">{sub}</p>}
+      <header className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-bold leading-tight">{title}</h3>
+          {sub && <p className="mt-0.5 text-xs text-ink-2">{sub}</p>}
+        </div>
+        {action}
       </header>
       <div className="min-h-0 flex-1">{children}</div>
     </section>
