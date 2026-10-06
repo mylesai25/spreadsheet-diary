@@ -73,17 +73,17 @@ class CumulativeChart extends StatelessWidget {
     if (data.rows.length < 2 || data.series.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('No sessions in this range', style: Fig.smallMuted)));
     final last = data.rows.length - 1;
     final maxV = data.series.map((s) => data.rows[last].values[s.key] ?? 0).fold<double>(1, math.max);
-    final maxY = _nice(maxV);
+    final (maxY, step) = _nice(maxV);
     return Column(children: [
       SizedBox(
         height: 210,
         child: LineChart(LineChartData(
           minX: 0, maxX: last.toDouble(), minY: 0, maxY: maxY,
-          gridData: FlGridData(drawVerticalLine: false, horizontalInterval: maxY / 4, getDrawingHorizontalLine: (_) => const FlLine(color: Fig.grid, strokeWidth: 1)),
+          gridData: FlGridData(drawVerticalLine: false, horizontalInterval: step, getDrawingHorizontalLine: (_) => const FlLine(color: Fig.grid, strokeWidth: 1)),
           borderData: FlBorderData(show: true, border: const Border(left: BorderSide(color: Fig.axis), bottom: BorderSide(color: Fig.axis))),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(), rightTitles: const AxisTitles(),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 34, interval: maxY / 4, getTitlesWidget: (v, m) => Text(fmtCount(v), style: Fig.axisText))),
+            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 34, interval: step, getTitlesWidget: (v, m) => Text(fmtCount(v), style: Fig.axisText))),
             bottomTitles: AxisTitles(
               axisNameWidget: Text(data.xLabel, style: Fig.axisText), axisNameSize: 16,
               sideTitles: SideTitles(showTitles: true, reservedSize: 20, interval: math.max(1, (last / 6).ceilToDouble()), getTitlesWidget: (v, m) => v % 1 == 0 ? Padding(padding: const EdgeInsets.only(top: 3), child: Text(v.toInt().toString(), style: Fig.axisText)) : const SizedBox.shrink()),
@@ -115,16 +115,16 @@ class CumulativeChart extends StatelessWidget {
 
   String _when(CumRow r) => r.date.isEmpty ? 'Before the first session' : '${data.xLabel} ${r.i} · ${DateFormat('MMM d').format(DateTime.parse(r.date))}';
 
-  /// Round an axis maximum up to a tidy number so the gridlines land on whole counts.
-  static double _nice(double max) {
+  /// Round an axis maximum up to a tidy number and pick a whole-count gridline step.
+  static (double, double) _nice(double max) {
     final mag = math.pow(10, (math.log(max) / math.ln10).floor()).toDouble();
     for (final m in [1, 2, 2.5, 5, 10]) {
       if (max <= m * mag * 1.0001) {
-        final step = m * mag / 4;
-        return math.max(step, (max / step).ceil() * step);
+        final step = math.max(1.0, (m * mag / 4).ceilToDouble());
+        return (math.max(step, (max / step).ceil() * step), step);
       }
     }
-    return max;
+    return (max, math.max(1.0, (max / 4).ceilToDouble()));
   }
 }
 

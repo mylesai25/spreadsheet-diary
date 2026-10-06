@@ -68,6 +68,8 @@ const _defaultCharts = [
   'drinks', 'shirtColors', 'people', 'sky',
 ];
 const _kCharts = 'dash_charts';
+/// Build-time starting selection (comma-separated ids), e.g. for simulator screenshots; saved choices still win.
+const _presetCharts = String.fromEnvironment('DIARY_CHARTS');
 
 /// Key metrics from /api/dashboard: tiles + a handful of fl_chart charts, drawn like the Diary_Graphs figures.
 class DashboardScreen extends StatefulWidget {
@@ -81,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<(Dashboard, ActivityStats)> _future;
   bool _closet = false;
   Future<ClosetStats>? _closetFuture;
-  Set<String> _selected = _defaultCharts.toSet();
+  Set<String> _selected = _presetCharts.isEmpty ? _defaultCharts.toSet() : _presetCharts.split(',').toSet();
 
   @override
   void initState() {
@@ -122,6 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.only(right: 6),
               child: FilterChip(
                 label: Text('${c.icon} ${c.label} ${_catCount(c.key)}/${_inCat(c.key).length}'),
+                labelStyle: TextStyle(color: _catCount(c.key) > 0 ? Fig.paper : Fig.ink2, fontSize: 13, fontWeight: _catCount(c.key) > 0 ? FontWeight.w700 : FontWeight.w500),
                 selected: _catCount(c.key) > 0, showCheckmark: false, onSelected: (_) => _toggleCat(c.key),
               ),
             ),

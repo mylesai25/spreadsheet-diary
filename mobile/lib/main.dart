@@ -60,7 +60,8 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
-  int _tab = 0;   // home is the calendar
+  // Home is the calendar; --dart-define=DIARY_TAB=2 opens on another tab (used for simulator screenshots).
+  int _tab = const int.fromEnvironment('DIARY_TAB', defaultValue: 0);
 
   @override
   Widget build(BuildContext context) {
