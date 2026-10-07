@@ -178,7 +178,7 @@ function GolfSection({ f }: { f: FriendProfile }) {
         {tiles.map((t) => <Tile key={t.label} {...t} />)}
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <ChartCard title={`My 18-Hole Scores with ${f.name}`} sub="Solo formats (Regular / Wolf), in order played" className="lg:col-span-2"><ScoreLine data={g.scores} /></ChartCard>
+        <ChartCard title={`My 18-Hole Scores with ${f.name}`} sub="Solo formats (Regular / Wolf), in order played" className="lg:col-span-2"><ScoreLine data={g.scores} emptyText={g.scores.length ? "Only one 18-hole round together so far" : "No 18-hole rounds together"} /></ChartCard>
         <ChartCard title="Courses" sub="Rounds per course"><RankBars data={g.courses} unit="Rounds" /></ChartCard>
         <ChartCard title="Formats" sub="Games played"><RankBars data={g.games} unit="Rounds" /></ChartCard>
         {g.scramble && (

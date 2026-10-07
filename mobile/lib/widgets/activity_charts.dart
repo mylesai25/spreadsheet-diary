@@ -66,14 +66,17 @@ class DonutChart extends StatelessWidget {
 
 /// Running totals per series, one point per session — the notebook's cumulative_line_graph.
 class CumulativeChart extends StatelessWidget {
-  const CumulativeChart(this.data, {super.key});
+  const CumulativeChart(this.data, {super.key, this.maxY, this.unit = ''});
   final Cumulative data;
+  /// Fixed ceiling (e.g. 100 for percentages) instead of a tidy number above the final totals.
+  final double? maxY;
+  final String unit;
   @override
   Widget build(BuildContext context) {
     if (data.rows.length < 2 || data.series.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('No sessions in this range', style: Fig.smallMuted)));
     final last = data.rows.length - 1;
     final maxV = data.series.map((s) => data.rows[last].values[s.key] ?? 0).fold<double>(1, math.max);
-    final (maxY, step) = _nice(maxV);
+    final (maxY, step) = this.maxY != null ? (this.maxY!, this.maxY! / 4) : _nice(maxV);
     return Column(children: [
       SizedBox(
         height: 210,
@@ -83,7 +86,7 @@ class CumulativeChart extends StatelessWidget {
           borderData: FlBorderData(show: true, border: const Border(left: BorderSide(color: Fig.axis), bottom: BorderSide(color: Fig.axis))),
           titlesData: FlTitlesData(
             topTitles: const AxisTitles(), rightTitles: const AxisTitles(),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 34, interval: step, getTitlesWidget: (v, m) => Text(fmtCount(v), style: Fig.axisText))),
+            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: unit.isEmpty ? 34 : 40, interval: step, getTitlesWidget: (v, m) => Text('${fmtCount(v)}$unit', style: Fig.axisText))),
             bottomTitles: AxisTitles(
               axisNameWidget: Text(data.xLabel, style: Fig.axisText), axisNameSize: 16,
               sideTitles: SideTitles(showTitles: true, reservedSize: 20, interval: math.max(1, (last / 6).ceilToDouble()), getTitlesWidget: (v, m) => v % 1 == 0 ? Padding(padding: const EdgeInsets.only(top: 3), child: Text(v.toInt().toString(), style: Fig.axisText)) : const SizedBox.shrink()),
@@ -96,7 +99,7 @@ class CumulativeChart extends StatelessWidget {
                 LineTooltipItem(
                   k == 0 ? '${_when(data.rows[spots[k].x.toInt()])}\n' : '',
                   const TextStyle(color: Fig.ink2, fontSize: 11),
-                  children: [TextSpan(text: '${data.series[spots[k].barIndex].name} ${fmtCount(spots[k].y)}', style: TextStyle(color: data.series[spots[k].barIndex].color, fontSize: 12, fontWeight: FontWeight.w700))],
+                  children: [TextSpan(text: '${data.series[spots[k].barIndex].name} ${fmtCount(spots[k].y)}$unit', style: TextStyle(color: data.series[spots[k].barIndex].color, fontSize: 12, fontWeight: FontWeight.w700))],
                 ),
             ],
           )),
@@ -109,7 +112,7 @@ class CumulativeChart extends StatelessWidget {
           ],
         )),
       ),
-      Padding(padding: const EdgeInsets.only(top: 8), child: FigLegend([for (final s in data.series) ('${s.name} ${fmtCount(data.rows[last].values[s.key] ?? 0)}', s.color)])),
+      Padding(padding: const EdgeInsets.only(top: 8), child: FigLegend([for (final s in data.series) ('${s.name} ${fmtCount(data.rows[last].values[s.key] ?? 0)}$unit', s.color)])),
     ]);
   }
 
@@ -239,32 +242,100 @@ class _BubblePainter extends CustomPainter {
 }
 
 /// Score per round, in order played — the notebook's "18-Hole Golf Scores" figure (green line, white dots).
+/// `toPar` plots strokes over par instead of the raw score, so 9- and 18-hole rounds share one line (mini golf, disc golf).
 class ScoreLine extends StatelessWidget {
-  const ScoreLine(this.data, {super.key});
+  const ScoreLine(this.data, {super.key, this.toPar = false});
   final List<GolfScore> data;
+  final bool toPar;
   @override
   Widget build(BuildContext context) {
-    if (data.length < 2) return SizedBox(height: 80, child: Center(child: Text(data.isEmpty ? 'No 18-hole rounds in range' : 'Only one 18-hole round so far', style: Fig.smallMuted)));
-    final scores = data.map((d) => d.score).toList();
-    final lo = ((scores.reduce(math.min) - 5) / 10).floor() * 10.0, hi = ((scores.reduce(math.max) + 5) / 10).ceil() * 10.0;
+    if (data.length < 2) return SizedBox(height: 80, child: Center(child: Text(data.isEmpty ? 'No rounds in range' : 'Only one round so far', style: Fig.smallMuted)));
+    final scores = data.map((d) => toPar ? d.toPar : d.score).toList();
+    final lo = toPar ? math.min(0.0, ((scores.reduce(math.min) - 2) / 5).floor() * 5.0) : ((scores.reduce(math.min) - 5) / 10).floor() * 10.0;
+    final hi = toPar ? ((scores.reduce(math.max) + 2) / 5).ceil() * 5.0 : ((scores.reduce(math.max) + 5) / 10).ceil() * 10.0;
+    String sign(double v) => v > 0 ? '+${v.toInt()}' : v.toInt().toString();
     return SizedBox(
       height: 200,
       child: LineChart(LineChartData(
         minY: lo, maxY: hi, minX: 1, maxX: data.length.toDouble(),
         gridData: FlGridData(drawVerticalLine: false, getDrawingHorizontalLine: (_) => const FlLine(color: Fig.grid, strokeWidth: 1)),
         borderData: FlBorderData(show: true, border: const Border(left: BorderSide(color: Fig.axis), bottom: BorderSide(color: Fig.axis))),
+        extraLinesData: toPar ? ExtraLinesData(horizontalLines: [HorizontalLine(y: 0, color: Fig.ink2, strokeWidth: 1, dashArray: [3, 3], label: HorizontalLineLabel(show: true, labelResolver: (_) => 'par', alignment: Alignment.topLeft, style: Fig.axisText))]) : const ExtraLinesData(),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(), rightTitles: const AxisTitles(),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 34, interval: 10, getTitlesWidget: (v, m) => Text(v.toInt().toString(), style: Fig.axisText))),
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 34, interval: toPar ? 5 : 10, getTitlesWidget: (v, m) => Text(toPar ? sign(v) : v.toInt().toString(), style: Fig.axisText))),
           bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, interval: data.length > 12 ? 2 : 1, getTitlesWidget: (v, m) => v % 1 == 0 ? Padding(padding: const EdgeInsets.only(top: 4), child: Text(v.toInt().toString(), style: Fig.axisText)) : const SizedBox.shrink())),
         ),
-        lineTouchData: LineTouchData(touchTooltipData: LineTouchTooltipData(getTooltipColor: (_) => Fig.surface2, getTooltipItems: (spots) => spots.map((s) { final r = data[s.x.toInt() - 1]; return LineTooltipItem('${r.course}\n${r.score.toInt()} (${r.toPar >= 0 ? '+' : ''}${r.toPar.toInt()})', const TextStyle(color: Fig.ink, fontSize: 12, fontWeight: FontWeight.w700)); }).toList())),
+        lineTouchData: LineTouchData(touchTooltipData: LineTouchTooltipData(getTooltipColor: (_) => Fig.surface2, getTooltipItems: (spots) => spots.map((s) { final r = data[s.x.toInt() - 1]; return LineTooltipItem('${r.course}${r.holes != 18 ? ' · ${r.holes} holes' : ''}\n${r.score.toInt()} (${sign(r.toPar)})', const TextStyle(color: Fig.ink, fontSize: 12, fontWeight: FontWeight.w700)); }).toList())),
         lineBarsData: [LineChartBarData(
-          spots: [for (var i = 0; i < data.length; i++) FlSpot(i + 1.0, data[i].score)],
+          spots: [for (var i = 0; i < data.length; i++) FlSpot(i + 1.0, scores[i])],
           color: Fig.neon, barWidth: 2.5, isCurved: false,
           dotData: FlDotData(show: true, getDotPainter: (s, p, b, i) => FlDotCirclePainter(radius: 3.5, color: Fig.white, strokeWidth: 0)),
         )],
       )),
     );
+  }
+}
+
+/// Grouped vertical bars over category labels (weekday profile, clock hours, temperature bins, histograms).
+/// Series are green, soft white, then light green, like the figures' pairing; `max` fixes the scale (10 for ratings, 100 for %).
+class GroupBars extends StatelessWidget {
+  const GroupBars(this.data, {super.key, required this.keys, required this.names, this.max, this.unit = '', this.fmt, this.height = 200});
+  final List<GroupRow> data;
+  final List<String> keys, names;
+  final double? max;
+  final String unit;
+  final String Function(double)? fmt;
+  final double height;
+  static const _fills = [Fig.fill, Fig.white, Color(0xFF86EFAC)];
+  static const _strokes = [Fig.neon, Fig.white, Color(0xFF86EFAC)];
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty || !data.any((r) => keys.any((k) => r.values[k] != null))) return const EmptyChart();
+    final f = fmt ?? ((double v) => v >= 1000 ? NumberFormat.compact().format(v) : fmtCount(v));
+    final peak = [for (final r in data) for (final k in keys) r.values[k] ?? 0].fold<double>(0, math.max);
+    final (top, step) = max != null ? (max!, max! / 4) : _niceAxis(peak);
+    final labelStep = (data.length / 7).ceil().clamp(1, 99);
+    final w = (keys.length > 2 ? 6.0 : keys.length > 1 ? 9.0 : 16.0) * (data.length > 10 ? 0.6 : 1);
+    return Column(children: [
+      SizedBox(
+        height: height,
+        child: BarChart(BarChartData(
+          maxY: top, alignment: BarChartAlignment.spaceAround,
+          gridData: FlGridData(drawVerticalLine: false, getDrawingHorizontalLine: (_) => const FlLine(color: Fig.grid, strokeWidth: 1)),
+          borderData: FlBorderData(show: true, border: const Border(left: BorderSide(color: Fig.axis), bottom: BorderSide(color: Fig.axis))),
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(), rightTitles: const AxisTitles(),
+            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 38, interval: step, getTitlesWidget: (v, m) => Text('${f(v)}$unit', style: Fig.axisText))),
+            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, interval: 1, getTitlesWidget: (v, m) {
+              final i = v.toInt();
+              if (i % labelStep != 0 || i >= data.length) return const SizedBox.shrink();
+              return Padding(padding: const EdgeInsets.only(top: 4), child: Text(data[i].label, style: const TextStyle(color: Fig.ink, fontSize: 10, fontWeight: FontWeight.w700)));
+            })),
+          ),
+          barTouchData: BarTouchData(touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => Fig.surface2,
+            getTooltipItem: (g, gi, r, ri) => BarTooltipItem('${data[g.x].label}${data[g.x].n > 0 ? ' · ${data[g.x].n} days' : ''}\n${names[ri]} ${f(r.toY)}$unit', const TextStyle(color: Fig.ink, fontSize: 12, fontWeight: FontWeight.w700)),
+          )),
+          barGroups: [
+            for (var i = 0; i < data.length; i++)
+              BarChartGroupData(x: i, barsSpace: 2, barRods: [
+                for (var k = 0; k < keys.length; k++)
+                  BarChartRodData(toY: data[i].values[keys[k]] ?? 0, color: _fills[k % 3], width: w, borderRadius: const BorderRadius.vertical(top: Radius.circular(2)), borderSide: BorderSide(color: _strokes[k % 3], width: 1)),
+              ]),
+          ],
+        )),
+      ),
+      if (keys.length > 1) Padding(padding: const EdgeInsets.only(top: 8), child: FigLegend([for (var k = 0; k < keys.length; k++) (names[k], _strokes[k % 3])])),
+    ]);
+  }
+
+  /// A tidy ceiling a little above the tallest bar, and a gridline step that gives 4–5 ticks.
+  static (double, double) _niceAxis(double peak) {
+    if (peak <= 0) return (1, 0.25);
+    final raw = peak * 1.1 / 4;
+    final mag = math.pow(10, (math.log(raw) / math.ln10).floor()).toDouble();
+    final step = [1, 2, 2.5, 5, 10].map((m) => m * mag).firstWhere((s) => s >= raw);
+    return ((peak * 1.1 / step).ceil() * step, step);
   }
 }

@@ -104,14 +104,16 @@ export function TimeLines({ data, keys, names, unit, domain, height = 220, area,
   if (!data.length) return <Empty />;
   const dense = data.length > 60;
   const rows = withTs(data);
+  const peak = Math.max(0, ...data.flatMap((d) => keys.map((k) => Number(d[k]) || 0)));
+  const yWidth = peak >= 100 ? 52 : 44;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart data={rows} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
         {grid}
         <TimeXAxis dates={data.map((d) => d.date)} />
-        <YAxis {...axis} domain={domain ?? ["auto", "auto"]} width={44} tickFormatter={(v) => `${v}${unit ?? ""}`} />
+        <YAxis {...axis} domain={domain ?? ["auto", "auto"]} width={yWidth} tickFormatter={(v) => `${v}${unit ?? ""}`} />
         <Tooltip content={<Tip title={(l) => formatShortDate(fromTs(Number(l)))} />} cursor={{ stroke: "var(--viz-axis)" }} />
-        {keys.length > 1 && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />}
+        {keys.length > 1 && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} itemSorter={() => 0} />}
         {keys.map((k, i) =>
           area && i === 0 ? (
             <Area isAnimationActive={false} key={k} type="monotone" dataKey={k} name={names[i]} stroke={S[i]} fill={S[i]} fillOpacity={0.18} strokeWidth={2} dot={false} connectNulls />
@@ -140,7 +142,7 @@ export function DayBars({ data, dataKey, name, avgKey, height = 220 }: { data: D
         <Tooltip content={<Tip title={(l) => formatShortDate(fromTs(Number(l)))} fmt={fmtInt} />} cursor={{ fill: "var(--surface-2)" }} />
         <Bar isAnimationActive={false} dataKey={dataKey} name={name} fill={BAR_FILL[0]} stroke={NEON} strokeWidth={1} maxBarSize={28} />
         {avgKey && <Line isAnimationActive={false} type="monotone" dataKey={avgKey} name="7-day avg" stroke="#d8dcd4" strokeWidth={1.5} strokeDasharray="5 3" dot={false} connectNulls />}
-        {avgKey && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />}
+        {avgKey && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} itemSorter={() => 0} />}
       </ComposedChart>
     </ResponsiveContainer>
   );
@@ -156,7 +158,7 @@ export function WeekBars({ data, keys, names, height = 220, refLine }: { data: W
         <XAxis dataKey="label" {...axis} minTickGap={24} />
         <YAxis {...axis} width={Math.max(...data.flatMap((d) => keys.map((k) => Number(d[k]) || 0))) >= 1000 ? 56 : 40} allowDecimals={false} tickFormatter={(v) => Number(v).toLocaleString("en-US")} />
         <Tooltip content={<Tip title={(l) => `Week of ${l}`} />} cursor={{ fill: "var(--surface-2)" }} />
-        {keys.length > 1 && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />}
+        {keys.length > 1 && <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} itemSorter={() => 0} />}
         {refLine != null && <ReferenceLine y={refLine} stroke="#d8dcd4" strokeDasharray="4 3" />}
         {keys.map((k, i) => <Bar isAnimationActive={false} key={k} dataKey={k} name={names[i]} fill={BAR_FILL[i]} stroke={BAR_STROKE[i]} strokeWidth={1} maxBarSize={32} />)}
       </BarChart>
@@ -230,7 +232,7 @@ export function GolfChart({ data, height = 220 }: { data: GolfRound[]; height?: 
         <YAxis {...axis} width={44} tickFormatter={(v) => (v > 0 ? `+${v}` : String(v))} />
         <Tooltip content={<Tip title={(l) => { const iso = fromTs(Number(l)); const r = data.find((x) => x.date === iso); return r ? `${formatShortDate(iso)} · ${r.course} (${r.score})` : iso; }} />} cursor={{ stroke: "var(--viz-axis)" }} />
         <ReferenceLine y={0} stroke="var(--viz-muted)" strokeDasharray="3 3" label={{ value: "par", position: "insideTopRight", fill: "var(--viz-muted)", fontSize: 11 }} />
-        <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />
+        <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} itemSorter={() => 0} />
         <Line isAnimationActive={false} type="monotone" dataKey="toPar" name="Score to par" stroke={S[0]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[0] }} activeDot={{ r: 5, stroke: "var(--surface)" }} />
         <Line isAnimationActive={false} type="monotone" dataKey="putts" name="Putts" stroke={S[1]} strokeWidth={2} dot={{ r: 3.5, strokeWidth: 0, fill: S[1] }} activeDot={{ r: 5, stroke: "var(--surface)" }} connectNulls />
       </LineChart>
@@ -238,22 +240,30 @@ export function GolfChart({ data, height = 220 }: { data: GolfRound[]; height?: 
   );
 }
 
-/** Score per round, in order played — the notebook's "My 18-Hole Golf Scores" figure (green line, white dots). */
-export function ScoreLine({ data, height = 220 }: { data: GolfScore[]; height?: number }) {
-  if (data.length < 2) return <Empty text={data.length ? "Only one 18-hole round so far" : "No 18-hole rounds together"} />;
+/**
+ * Score per round, in order played — the notebook's "My 18-Hole Golf Scores" figure (green line, white dots).
+ * `yKey="toPar"` plots strokes over par instead, so 9- and 18-hole rounds can share one line (mini golf, disc golf).
+ */
+export function ScoreLine({ data, height = 220, yKey = "score", emptyText }: { data: GolfScore[]; height?: number; yKey?: "score" | "toPar"; emptyText?: string }) {
+  if (data.length < 2) return <Empty text={emptyText ?? (data.length ? "Only one round so far" : "No rounds in this range")} />;
   const rows = data.map((d, i) => ({ ...d, round: i + 1 }));
-  const lo = Math.floor((Math.min(...data.map((d) => d.score)) - 5) / 10) * 10, hi = Math.ceil((Math.max(...data.map((d) => d.score)) + 5) / 10) * 10;
+  const ys = data.map((d) => d[yKey]);
+  const toPar = yKey === "toPar";
+  const lo = toPar ? Math.min(0, Math.floor((Math.min(...ys) - 2) / 5) * 5) : Math.floor((Math.min(...ys) - 5) / 10) * 10;
+  const hi = toPar ? Math.ceil((Math.max(...ys) + 2) / 5) * 5 : Math.ceil((Math.max(...ys) + 5) / 10) * 10;
+  const sign = (n: number) => (n > 0 ? `+${n}` : String(n));
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={rows} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
         {grid}
         <XAxis dataKey="round" {...axis} interval={0} tickFormatter={(v) => (rows.length > 12 && v % 2 === 0 ? "" : String(v))} />
-        <YAxis {...axis} domain={[lo, hi]} width={44} />
+        <YAxis {...axis} domain={[lo, hi]} width={44} tickFormatter={(v) => (toPar ? sign(Number(v)) : String(v))} />
+        {toPar && <ReferenceLine y={0} stroke="var(--viz-muted)" strokeDasharray="3 3" label={{ value: "par", position: "insideTopLeft", fill: "var(--viz-muted)", fontSize: 11 }} />}
         <Tooltip cursor={{ stroke: "var(--viz-axis)" }} content={({ active, payload }) => {
           const p = payload?.[0]?.payload as (GolfScore & { round: number }) | undefined;
-          return active && p ? <div className={tipBox}><div className="text-xs text-muted">Round {p.round} · {formatShortDate(p.date)}</div>{p.course}<div><b>{p.score}</b> <span className="text-ink-2">({p.toPar >= 0 ? "+" : ""}{p.toPar})</span></div></div> : null;
+          return active && p ? <div className={tipBox}><div className="text-xs text-muted">Round {p.round} · {formatShortDate(p.date)}{p.holes !== 18 ? ` · ${p.holes} holes` : ""}</div>{p.course}<div><b>{p.score}</b> <span className="text-ink-2">({sign(p.toPar)})</span></div></div> : null;
         }} />
-        <Line isAnimationActive={false} type="linear" dataKey="score" name="Score" stroke={S[0]} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 0, fill: "#d8dcd4" }} activeDot={{ r: 6, stroke: "var(--surface)" }} />
+        <Line isAnimationActive={false} type="linear" dataKey={yKey} name={toPar ? "Over par" : "Score"} stroke={S[0]} strokeWidth={2.5} dot={{ r: 4, strokeWidth: 0, fill: "#d8dcd4" }} activeDot={{ r: 6, stroke: "var(--surface)" }} />
       </LineChart>
     </ResponsiveContainer>
   );

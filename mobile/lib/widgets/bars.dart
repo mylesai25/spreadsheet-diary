@@ -16,14 +16,16 @@ String fmtCount(double v) => v % 1 == 0 ? v.toInt().toString() : v.toStringAsFix
 /// Horizontal ranked bars, brightest at the top (the brands figure's ramp), each with a lime outline.
 /// `colorByName` paints each bar with the named color it represents (shirt colors, shades of green).
 class RankBars extends StatelessWidget {
-  const RankBars(this.data, {super.key, this.colorByName = false, this.labelWidth = 96});
+  const RankBars(this.data, {super.key, this.colorByName = false, this.labelWidth = 96, this.max});
   final List<Count> data;
   final bool colorByName;
   final double labelWidth;
+  /// Fixed scale (e.g. 10 for ratings) instead of the largest value.
+  final double? max;
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) return const EmptyChart();
-    final max = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
+    final max = this.max ?? data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
     return Column(children: [
       for (var i = 0; i < data.length; i++)
         Padding(

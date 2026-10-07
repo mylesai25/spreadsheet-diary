@@ -370,10 +370,11 @@ class FitPiece {
 }
 
 class GolfScore {
-  GolfScore(this.date, this.course, this.score, this.toPar);
+  GolfScore(this.date, this.course, this.score, this.toPar, [this.holes = 18]);
   final String date, course;
   final double score, toPar;
-  factory GolfScore.fromJson(Map<String, dynamic> j) => GolfScore(_s(j['date']), _s(j['course']), _d(j['score']) ?? 0, _d(j['toPar']) ?? 0);
+  final int holes;
+  factory GolfScore.fromJson(Map<String, dynamic> j) => GolfScore(_s(j['date']), _s(j['course']), _d(j['score']) ?? 0, _d(j['toPar']) ?? 0, (j['holes'] as num? ?? 18).toInt());
 }
 
 /// The notebook's per-person golf summary ("Friendship Golf").
@@ -541,8 +542,12 @@ List<Tile> _tiles(dynamic l) => (l as List? ?? []).map((e) => Tile.fromJson(e as
 List<Count> _counts(dynamic l) => (l as List? ?? []).map((e) => Count.fromJson(e as Map<String, dynamic>)).toList();
 List<Slice> _slices(dynamic l) => (l as List? ?? []).map((e) => Slice.fromJson(e as Map<String, dynamic>)).toList();
 
+List<GolfScore> _scores(dynamic l) => (l as List? ?? []).map((e) => GolfScore.fromJson(e as Map<String, dynamic>)).toList();
+List<SendRate> _rates(dynamic l) => (l as List? ?? []).map((e) => SendRate.fromJson(e as Map<String, dynamic>)).toList();
+Cumulative _cum(dynamic j) => j == null ? Cumulative(const [], const [], '') : Cumulative.fromJson(j as Map<String, dynamic>);
+
 class GolfStats {
-  GolfStats({required this.tiles, required this.outcomes, required this.cumulative, required this.putts, required this.courses, required this.scores18, required this.rounds, required this.note});
+  GolfStats({required this.tiles, required this.outcomes, required this.cumulative, required this.putts, required this.courses, required this.scores18, required this.rounds, required this.note, required this.byCourse, required this.cart, required this.fairwaysGreens});
   final List<Tile> tiles;
   final List<Slice> outcomes;
   final Cumulative cumulative;
@@ -550,26 +555,95 @@ class GolfStats {
   final List<GolfScore> scores18;
   final int rounds;
   final String note;
+  /// Average strokes over par per course, median 18-hole score by cart use, FIR% / GIR% per round.
+  final List<Count> byCourse, cart;
+  final Cumulative fairwaysGreens;
   factory GolfStats.fromJson(Map<String, dynamic> j) => GolfStats(
-        tiles: _tiles(j['tiles']), outcomes: _slices(j['outcomes']), cumulative: Cumulative.fromJson(j['cumulative'] as Map<String, dynamic>),
-        putts: _counts(j['putts']), courses: _counts(j['courses']),
-        scores18: (j['scores18'] as List? ?? []).map((e) => GolfScore.fromJson(e as Map<String, dynamic>)).toList(),
+        tiles: _tiles(j['tiles']), outcomes: _slices(j['outcomes']), cumulative: _cum(j['cumulative']),
+        putts: _counts(j['putts']), courses: _counts(j['courses']), scores18: _scores(j['scores18']),
         rounds: (j['rounds'] as num? ?? 0).toInt(), note: _s(j['note']),
+        byCourse: _counts(j['byCourse']), cart: _counts(j['cart']), fairwaysGreens: _cum(j['fairwaysGreens']),
       );
 }
 
+/// The Mini-Golf sheet: rounds to par, putt distribution, courses and winners.
+class MiniGolfStats {
+  MiniGolfStats({required this.tiles, required this.scores, required this.putts, required this.courses, required this.winners, required this.rounds});
+  final List<Tile> tiles;
+  final List<GolfScore> scores;
+  final List<Slice> putts;
+  final List<Count> courses, winners;
+  final int rounds;
+  factory MiniGolfStats.fromJson(Map<String, dynamic> j) => MiniGolfStats(
+        tiles: _tiles(j['tiles']), scores: _scores(j['scores']), putts: _slices(j['putts']), courses: _counts(j['courses']), winners: _counts(j['winners']),
+        rounds: (j['rounds'] as num? ?? 0).toInt(),
+      );
+}
+
+/// The Disc Golf sheet: rounds to par, hole outcomes (share + running count), courses and winners.
+class DiscGolfStats {
+  DiscGolfStats({required this.tiles, required this.scores, required this.outcomes, required this.cumulative, required this.courses, required this.winners, required this.rounds});
+  final List<Tile> tiles;
+  final List<GolfScore> scores;
+  final List<Slice> outcomes;
+  final Cumulative cumulative;
+  final List<Count> courses, winners;
+  final int rounds;
+  factory DiscGolfStats.fromJson(Map<String, dynamic> j) => DiscGolfStats(
+        tiles: _tiles(j['tiles']), scores: _scores(j['scores']), outcomes: _slices(j['outcomes']), cumulative: _cum(j['cumulative']),
+        courses: _counts(j['courses']), winners: _counts(j['winners']), rounds: (j['rounds'] as num? ?? 0).toInt(),
+      );
+}
+
+/// One row of a grouped bar chart: a label plus a number per series key (null = no data).
+class GroupRow {
+  GroupRow(this.label, this.values, this.n);
+  final String label;
+  final Map<String, double?> values;
+  final int n;
+  factory GroupRow.fromJson(Map<String, dynamic> j) => GroupRow(
+        _s(j['label']),
+        {for (final e in j.entries) if (e.key != 'label' && e.key != 'n') e.key: _d(e.value)},
+        (j['n'] as num? ?? 0).toInt(),
+      );
+}
+
+/// Daily-sheet figures beyond the notebook (streaks, weekday profile, clock hours, ratings…).
+class Extras {
+  Extras({required this.streaks, required this.weekday, required this.hours, required this.battery, required this.funBySky, required this.drinkTypes, required this.projects, required this.projectProd,
+      required this.jacketByTemp, required this.cuisineRatings, required this.tv, required this.movies, required this.broadway, required this.games, required this.shows, required this.services, required this.boardGames, required this.sportDays});
+  final List<Tile> streaks;
+  final List<GroupRow> weekday, hours, jacketByTemp;
+  final List<Count> battery, funBySky, drinkTypes, projects, projectProd, cuisineRatings, tv, movies, broadway, games, shows, services, boardGames, sportDays;
+  static List<GroupRow> _rows(dynamic l) => (l as List? ?? []).map((e) => GroupRow.fromJson(e as Map<String, dynamic>)).toList();
+  factory Extras.fromJson(Map<String, dynamic>? j) {
+    j ??= const {};
+    final r = (j['ratings'] as Map<String, dynamic>?) ?? const {};
+    return Extras(
+      streaks: _tiles(j['streaks']), weekday: _rows(j['weekday']), hours: _rows(j['hours']), jacketByTemp: _rows(j['jacketByTemp']),
+      battery: (j['battery'] as List? ?? []).map((e) => Count(_s((e as Map)['bin']), _d(e['days']) ?? 0)).toList(),
+      funBySky: _counts(j['funBySky']), drinkTypes: _counts(j['drinkTypes']), projects: _counts(j['projects']), projectProd: _counts(j['projectProd']),
+      cuisineRatings: _counts(j['cuisineRatings']), tv: _counts(r['tv']), movies: _counts(r['movies']), broadway: _counts(r['broadway']), games: _counts(r['games']),
+      shows: _counts(j['shows']), services: _counts(j['services']), boardGames: _counts(j['boardGames']), sportDays: _counts(j['sportDays']),
+    );
+  }
+}
+
 class ClimbStats {
-  ClimbStats({required this.tiles, required this.grades, required this.cumulative, required this.sendRate, required this.gyms, required this.sessions});
+  ClimbStats({required this.tiles, required this.grades, required this.cumulative, required this.sendRate, required this.gyms, required this.sessions, required this.colors, required this.colorSendRate});
   final List<Tile> tiles;
   final List<Slice> grades;
   final Cumulative cumulative;
   final List<SendRate> sendRate;
   final List<Count> gyms;
   final int sessions;
+  /// Color-circuit gyms (Green → Purple).
+  final List<Slice> colors;
+  final List<SendRate> colorSendRate;
   factory ClimbStats.fromJson(Map<String, dynamic> j) => ClimbStats(
-        tiles: _tiles(j['tiles']), grades: _slices(j['grades']), cumulative: Cumulative.fromJson(j['cumulative'] as Map<String, dynamic>),
-        sendRate: (j['sendRate'] as List? ?? []).map((e) => SendRate.fromJson(e as Map<String, dynamic>)).toList(),
-        gyms: _counts(j['gyms']), sessions: (j['sessions'] as num? ?? 0).toInt(),
+        tiles: _tiles(j['tiles']), grades: _slices(j['grades']), cumulative: _cum(j['cumulative']),
+        sendRate: _rates(j['sendRate']), gyms: _counts(j['gyms']), sessions: (j['sessions'] as num? ?? 0).toInt(),
+        colors: _slices(j['colors']), colorSendRate: _rates(j['colorSendRate']),
       );
 }
 
@@ -586,13 +660,19 @@ class SkiStats {
 }
 
 class ActivityStats {
-  ActivityStats({required this.golf, required this.climb, required this.ski, required this.sportHours});
+  ActivityStats({required this.golf, required this.climb, required this.ski, required this.miniGolf, required this.discGolf, required this.sportHours, required this.extras});
   final GolfStats golf;
   final ClimbStats climb;
   final SkiStats ski;
+  final MiniGolfStats miniGolf;
+  final DiscGolfStats discGolf;
   final List<Count> sportHours;
+  final Extras extras;
   factory ActivityStats.fromJson(Map<String, dynamic> j) => ActivityStats(
         golf: GolfStats.fromJson(j['golf'] as Map<String, dynamic>), climb: ClimbStats.fromJson(j['climb'] as Map<String, dynamic>),
-        ski: SkiStats.fromJson(j['ski'] as Map<String, dynamic>), sportHours: _counts(j['sportHours']),
+        ski: SkiStats.fromJson(j['ski'] as Map<String, dynamic>),
+        miniGolf: MiniGolfStats.fromJson((j['miniGolf'] as Map<String, dynamic>?) ?? const {}),
+        discGolf: DiscGolfStats.fromJson((j['discGolf'] as Map<String, dynamic>?) ?? const {}),
+        sportHours: _counts(j['sportHours']), extras: Extras.fromJson(j['extras'] as Map<String, dynamic>?),
       );
 }

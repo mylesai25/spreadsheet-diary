@@ -25,17 +25,25 @@ class _Chart {
 
 const _cats = [
   _Cat('overview', 'Overview', '📓'), _Cat('sleep', 'Sleep & mood', '😴'), _Cat('fitness', 'Fitness', '💪'), _Cat('golf', 'Golf', '⛳'),
+  _Cat('minigolf', 'Mini golf', '🏌️'), _Cat('discgolf', 'Disc golf', '🥏'),
   _Cat('climbing', 'Climbing', '🧗'), _Cat('skiing', 'Skiing', '⛷️'), _Cat('food', 'Food & drink', '🍜'), _Cat('wardrobe', 'Wardrobe', '👕'),
-  _Cat('people', 'People', '👥'), _Cat('travel', 'Travel & weather', '🚆'),
+  _Cat('people', 'People', '👥'), _Cat('travel', 'Travel & weather', '🚆'), _Cat('work', 'Work', '💻'), _Cat('fun', 'Games & screen', '🎮'),
 ];
 
 const _charts = [
   _Chart('tiles', 'overview', 'Headline numbers', 'Days logged, sleep, fun, steps, gym, drinks, meals'),
+  _Chart('streaks', 'overview', 'Streaks', 'Longest run of each good habit in this range, and where it stands now'),
+  _Chart('weekday', 'overview', 'Weekday profile', 'Average fun, productivity and sleep by day of the week'),
   _Chart('sleep', 'sleep', 'Sleep', 'Hours slept with 7-day average'),
   _Chart('funProd', 'sleep', 'Fun & productivity', 'Daily self-ratings, 1–10'),
+  _Chart('hours', 'sleep', 'Bedtime & wake-up', 'Nights by bedtime hour, mornings by wake-up hour'),
+  _Chart('battery', 'sleep', 'Morning phone battery', 'Mornings by battery left when you woke up'),
+  _Chart('funSky', 'sleep', 'Fun by weather', 'Average fun meter on days with each sky (3+ days)'),
   _Chart('steps', 'fitness', 'Steps'),
   _Chart('gymWeeks', 'fitness', 'Gym days per week'),
   _Chart('sportBubbles', 'fitness', 'Hours by sport', 'Circle area = time played'),
+  _Chart('sportDays', 'fitness', 'Days by sport', 'Days each sport was played'),
+  _Chart('stepsWeekday', 'fitness', 'Steps by weekday', 'Average steps per day of the week'),
   _Chart('golfTiles', 'golf', 'Golf numbers', 'Solo rounds (Regular / Wolf), like the notebook'),
   _Chart('golfScores18', 'golf', '18-hole scores', 'Every solo 18-hole round, in order played'),
   _Chart('golfToPar', 'golf', 'Score to par', 'Per round, over time'),
@@ -43,11 +51,27 @@ const _charts = [
   _Chart('golfCumulative', 'golf', 'Outcomes, round by round', 'Running count of each hole result'),
   _Chart('golfPutts', 'golf', 'Putting', 'Holes by putt count'),
   _Chart('golfCourses', 'golf', 'Courses played', 'Rounds per course'),
+  _Chart('golfFairways', 'golf', 'Fairways & greens hit', 'FIR% and GIR% per solo round, in order played'),
+  _Chart('golfByCourse', 'golf', 'Score to par by course', 'Average strokes over par, solo rounds · easiest first'),
+  _Chart('golfCart', 'golf', 'Cart vs walking', 'Median 18-hole score'),
+  _Chart('miniTiles', 'minigolf', 'Mini golf numbers', 'Rounds, scoring, hole-in-ones, wins'),
+  _Chart('miniScores', 'minigolf', 'Rounds to par', 'Strokes over par per round, in order played'),
+  _Chart('miniPutts', 'minigolf', 'Putts per hole', 'Hole-in-ones to four-putts'),
+  _Chart('miniCourses', 'minigolf', 'Courses played', 'Rounds per course'),
+  _Chart('miniWinners', 'minigolf', 'Who won', 'Rounds won by each player'),
+  _Chart('discTiles', 'discgolf', 'Disc golf numbers', 'Rounds, scoring, birdies, wins, miles'),
+  _Chart('discScores', 'discgolf', 'Rounds to par', 'Throws over par per round, in order played'),
+  _Chart('discOutcomes', 'discgolf', 'Hole outcomes', 'Aces, birdies, pars, bogeys…'),
+  _Chart('discCumulative', 'discgolf', 'Outcomes, round by round', 'Running count of each hole result'),
+  _Chart('discCourses', 'discgolf', 'Courses played', 'Rounds per course'),
+  _Chart('discWinners', 'discgolf', 'Who won', 'Rounds won by each player'),
   _Chart('climbTiles', 'climbing', 'Climbing numbers', 'Sessions, time on the wall, sends'),
   _Chart('climbGrades', 'climbing', 'Climbs completed', 'By V-grade'),
   _Chart('climbCumulative', 'climbing', 'Sends, session by session', 'Running count of completed climbs per grade'),
   _Chart('climbSendRate', 'climbing', 'Send rate', 'Completed ÷ attempted, per grade'),
   _Chart('climbGyms', 'climbing', 'Gyms', 'Sessions per gym'),
+  _Chart('climbColors', 'climbing', 'Color circuits sent', 'Gyms that grade by color instead of V-grade'),
+  _Chart('climbColorRate', 'climbing', 'Send rate by color', 'Completed ÷ attempted, per circuit'),
   _Chart('skiTiles', 'skiing', 'Ski numbers', 'Days, hours, runs, falls'),
   _Chart('skiRuns', 'skiing', 'Runs by difficulty', 'Green to double black'),
   _Chart('skiCumulative', 'skiing', 'Runs, day by day', 'Running count of runs per difficulty'),
@@ -55,14 +79,26 @@ const _charts = [
   _Chart('drinks', 'food', 'Drinks per week'),
   _Chart('cuisines', 'food', 'Cuisines', 'Restaurant visits'),
   _Chart('restaurants', 'food', 'Top restaurants', 'Visits'),
+  _Chart('drinkTypes', 'food', 'What you drank', 'Days each drink type showed up'),
+  _Chart('cuisineRatings', 'food', 'Best-rated cuisines', 'Average food rating, 2+ visits'),
   _Chart('shirtColors', 'wardrobe', 'Shirt colors', 'Days worn'),
+  _Chart('jacketTemp', 'wardrobe', 'When the jacket comes out', 'Share of days with a jacket, hat or two layers, by high temperature'),
   _Chart('people', 'people', 'People seen most', 'Days together'),
   _Chart('sky', 'travel', 'Sky', 'Days'),
   _Chart('wakeCities', 'travel', 'Woke up in', 'Days per city'),
+  _Chart('projects', 'work', 'Projects', 'Days worked on each'),
+  _Chart('projectProd', 'work', 'Productivity by project', 'Average productivity on days you worked on each (3+ days)'),
+  _Chart('gameRatings', 'fun', 'Game ratings', 'Your Video Game Rankings sheet, out of 10'),
+  _Chart('boardGames', 'fun', 'Board games', 'Days played'),
+  _Chart('tvRatings', 'fun', 'TV ratings', 'Your Year Rankings sheet, out of 10'),
+  _Chart('movieRatings', 'fun', 'Movie ratings', 'Your Year Rankings sheet, out of 10'),
+  _Chart('broadwayRatings', 'fun', 'Broadway ratings', 'Your Year Rankings sheet, out of 10'),
+  _Chart('shows', 'fun', 'Dinner-table TV', 'Shows watched during meals, by days'),
+  _Chart('services', 'fun', 'Streaming services', 'Meals watched on each'),
 ];
 
 const _defaultCharts = [
-  'tiles', 'sleep', 'funProd', 'steps', 'gymWeeks', 'sportBubbles',
+  'tiles', 'streaks', 'weekday', 'sleep', 'funProd', 'steps', 'gymWeeks', 'sportBubbles',
   'golfTiles', 'golfScores18', 'golfOutcomes', 'golfCumulative',
   'climbTiles', 'climbGrades', 'climbCumulative',
   'drinks', 'shirtColors', 'people', 'sky',
@@ -70,6 +106,8 @@ const _defaultCharts = [
 const _kCharts = 'dash_charts';
 /// Build-time starting selection (comma-separated ids), e.g. for simulator screenshots; saved choices still win.
 const _presetCharts = String.fromEnvironment('DIARY_CHARTS');
+/// Build-time starting range (7d/30d/90d/ytd/all), also for screenshots.
+const _presetRange = String.fromEnvironment('DIARY_RANGE', defaultValue: '30d');
 
 /// Key metrics from /api/dashboard: tiles + a handful of fl_chart charts, drawn like the Diary_Graphs figures.
 class DashboardScreen extends StatefulWidget {
@@ -79,7 +117,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  String _range = '30d';
+  String _range = _presetRange;
   late Future<(Dashboard, ActivityStats)> _future;
   bool _closet = false;
   Future<ClosetStats>? _closetFuture;
@@ -177,11 +215,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _chart(String id, Dashboard d, ActivityStats a) {
     switch (id) {
       case 'tiles': return _tiles(d.tiles);
+      case 'streaks': return TileRow(a.extras.streaks);
+      case 'weekday': return GroupBars(a.extras.weekday, keys: const ['fun', 'productivity', 'sleep'], names: const ['Fun meter', 'Productivity', 'Hours slept'], max: 10);
       case 'sleep': return _sleepChart(d);
       case 'funProd': return _funChart(d);
+      case 'hours': return GroupBars(a.extras.hours, keys: const ['bed', 'wake'], names: const ['Bedtime', 'Wake-up']);
+      case 'battery': return GroupBars([for (final c in a.extras.battery) GroupRow(c.name.replaceAll('–', '-').replaceAll('%', ''), {'days': c.value}, 0)], keys: const ['days'], names: const ['Mornings']);
+      case 'funSky': return RankBars(a.extras.funBySky, max: 10);
       case 'steps': return _stepsChart(d);
       case 'gymWeeks': return _weekBars(d.weeks.map((w) => w.gymDays).toList(), d.weeks.map((w) => w.label).toList());
       case 'sportBubbles': return BubblePack(a.sportHours);
+      case 'sportDays': return RankBars(a.extras.sportDays);
+      case 'stepsWeekday': return GroupBars(a.extras.weekday, keys: const ['steps'], names: const ['Avg steps']);
       case 'golfTiles': return TileRow(a.golf.tiles);
       case 'golfScores18': return ScoreLine(a.golf.scores18);
       case 'golfToPar': return d.golf.isEmpty ? const EmptyChart() : _golfChart(d);
@@ -189,11 +234,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'golfCumulative': return CumulativeChart(a.golf.cumulative);
       case 'golfPutts': return RankBars(a.golf.putts);
       case 'golfCourses': return RankBars(a.golf.courses, labelWidth: 130);
+      case 'golfFairways': return CumulativeChart(a.golf.fairwaysGreens, maxY: 100, unit: '%');
+      case 'golfByCourse': return RankBars(a.golf.byCourse, labelWidth: 130);
+      case 'golfCart': return RankBars(a.golf.cart);
+      case 'miniTiles': return TileRow(a.miniGolf.tiles);
+      case 'miniScores': return ScoreLine(a.miniGolf.scores, toPar: true);
+      case 'miniPutts': return DonutChart(a.miniGolf.putts, unit: 'holes');
+      case 'miniCourses': return RankBars(a.miniGolf.courses, labelWidth: 130);
+      case 'miniWinners': return RankBars(a.miniGolf.winners);
+      case 'discTiles': return TileRow(a.discGolf.tiles);
+      case 'discScores': return ScoreLine(a.discGolf.scores, toPar: true);
+      case 'discOutcomes': return DonutChart(a.discGolf.outcomes, unit: 'holes');
+      case 'discCumulative': return CumulativeChart(a.discGolf.cumulative);
+      case 'discCourses': return RankBars(a.discGolf.courses, labelWidth: 130);
+      case 'discWinners': return RankBars(a.discGolf.winners);
       case 'climbTiles': return TileRow(a.climb.tiles);
       case 'climbGrades': return DonutChart(a.climb.grades, unit: 'climbs');
       case 'climbCumulative': return CumulativeChart(a.climb.cumulative);
       case 'climbSendRate': return SendRateBars(a.climb.sendRate);
       case 'climbGyms': return RankBars(a.climb.gyms);
+      case 'climbColors': return DonutChart(a.climb.colors, unit: 'climbs');
+      case 'climbColorRate': return SendRateBars(a.climb.colorSendRate);
       case 'skiTiles': return TileRow(a.ski.tiles);
       case 'skiRuns': return DonutChart(a.ski.runs, unit: 'runs');
       case 'skiCumulative': return CumulativeChart(a.ski.cumulative);
@@ -201,10 +262,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'drinks': return _weekBars(d.weeks.map((w) => w.drinks).toList(), d.weeks.map((w) => w.label).toList());
       case 'cuisines': return RankBars(d.cuisines);
       case 'restaurants': return RankBars(d.restaurants, labelWidth: 130);
+      case 'drinkTypes': return RankBars(a.extras.drinkTypes);
+      case 'cuisineRatings': return RankBars(a.extras.cuisineRatings, max: 10);
       case 'shirtColors': return RankBars(d.shirtColors, colorByName: true);
+      case 'jacketTemp': return GroupBars(a.extras.jacketByTemp, keys: const ['jacket', 'hat', 'layers'], names: const ['Jacket', 'Hat', '2 layers'], max: 100, unit: '%', fmt: (v) => v.toInt().toString());
       case 'people': return RankBars(d.people);
       case 'sky': return RankBars(d.sky);
       case 'wakeCities': return RankBars(d.wakeCities);
+      case 'projects': return RankBars(a.extras.projects);
+      case 'projectProd': return RankBars(a.extras.projectProd, max: 10);
+      case 'gameRatings': return RankBars(a.extras.games, max: 10, labelWidth: 130);
+      case 'boardGames': return RankBars(a.extras.boardGames);
+      case 'tvRatings': return RankBars(a.extras.tv, max: 10, labelWidth: 150);
+      case 'movieRatings': return RankBars(a.extras.movies, max: 10, labelWidth: 130);
+      case 'broadwayRatings': return RankBars(a.extras.broadway, max: 10, labelWidth: 130);
+      case 'shows': return RankBars(a.extras.shows, labelWidth: 150);
+      case 'services': return RankBars(a.extras.services);
       default: return const EmptyChart();
     }
   }
@@ -212,6 +285,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _sub(_Chart c, Dashboard d, ActivityStats a) {
     if (c.id == 'golfOutcomes' || c.id == 'golfPutts') return a.golf.note;
     if (c.id == 'steps') return d.days.length > 60 ? 'Average per day, by week' : 'Per day';
+    if (c.id == 'miniTiles' || c.id == 'miniScores') return a.miniGolf.rounds > 0 ? '${a.miniGolf.rounds} rounds in range' : 'No mini golf in range';
+    if (c.id == 'discTiles' || c.id == 'discScores') return a.discGolf.rounds > 0 ? '${a.discGolf.rounds} rounds in range' : 'No disc golf in range';
     return c.sub;
   }
 

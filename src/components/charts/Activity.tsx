@@ -7,6 +7,10 @@ import { NEON } from "@/lib/colors";
 import { formatShortDate } from "@/lib/dates";
 import { axis, Empty, legendStyle, Tile, tipBox } from "./Charts";
 
+/* SVG <title> text must be one string: the HTML parser folds adjacent text nodes inside <title>, so multi-part JSX
+   children never hydrate. Coordinates are rounded to two decimals for the same reason (identical markup both sides). */
+const f2 = (n: number) => Math.round(n * 100) / 100;
+
 /* ───────────── A row of headline tiles (golf / climbing / ski numbers) ───────────── */
 
 export function TileRow({ tiles }: { tiles: TileData[] }) {
@@ -19,11 +23,11 @@ export function TileRow({ tiles }: { tiles: TileData[] }) {
 
 /* ───────────── The notebook's cumulative_line_graph: running totals per series, one point per session ───────────── */
 
-export function CumulativeLines({ data, height = 240 }: { data: Cumulative; height?: number }) {
+export function CumulativeLines({ data, height = 240, yMax: fixedMax, unit = "" }: { data: Cumulative; height?: number; yMax?: number; unit?: string }) {
   if (data.rows.length < 2 || !data.series.length) return <Empty text="No sessions in this range" />;
   const last = data.rows.length - 1;
   const finals = data.series.map((s) => Number(data.rows[last][s.key]) || 0);
-  const yMax = niceMax(Math.max(1, ...finals));
+  const yMax = fixedMax ?? niceMax(Math.max(1, ...finals));
   // End labels: nudge apart any that would land within 12px of each other (plot height ≈ height − margins − axis − legend).
   const plotH = height - 8 - 4 - 30 - 24;
   const px = (v: number) => (1 - v / yMax) * plotH;
@@ -36,7 +40,7 @@ export function CumulativeLines({ data, height = 240 }: { data: Cumulative; heig
       <LineChart data={data.rows} margin={{ top: 8, right: 76, left: -18, bottom: 4 }}>
         <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
         <XAxis dataKey="i" type="number" domain={[0, last]} allowDecimals={false} tickCount={Math.min(last + 1, 8)} {...axis} label={{ value: data.xLabel, position: "insideBottomRight", offset: -2, fill: "var(--viz-muted)", fontSize: 11 }} />
-        <YAxis {...axis} width={44} allowDecimals={false} domain={[0, yMax]} />
+        <YAxis {...axis} width={44} allowDecimals={false} domain={[0, yMax]} tickFormatter={(v) => `${v}${unit}`} />
         <Tooltip cursor={{ stroke: "var(--viz-axis)" }} content={({ active, payload, label }) => {
           const row = payload?.[0]?.payload as Cumulative["rows"][number] | undefined;
           return active && payload?.length && row ? (
@@ -46,20 +50,20 @@ export function CumulativeLines({ data, height = 240 }: { data: Cumulative; heig
                 <div key={String(p.dataKey)} className="flex items-center gap-2">
                   <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: p.color }} />
                   <span className="text-ink-2">{p.name}</span>
-                  <span className="ml-auto font-bold tabular-nums">{p.value as number}</span>
+                  <span className="ml-auto font-bold tabular-nums">{p.value as number}{unit}</span>
                 </div>
               ))}
             </div>
           ) : null;
         }} />
-        <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} />
+        <Legend iconType="square" iconSize={9} wrapperStyle={legendStyle} itemSorter={() => 0} />
         {data.series.map((s, si) => (
           <Line
             key={s.key} isAnimationActive={false} type="linear" dataKey={s.key} name={s.name} stroke={s.color} strokeWidth={2} dot={false}
             activeDot={{ r: 5, stroke: "var(--surface)", strokeWidth: 2, fill: s.color }}
             label={(p: { x?: number | string; y?: number | string; index?: number; value?: unknown }) =>
               p.index === last && p.x != null && p.y != null ? (
-                <text x={Number(p.x) + 6} y={Number(p.y) + 4 + offsets[si]} fill="var(--ink)" fontSize={11} fontWeight={700}>{s.name} {String(p.value)}</text>
+                <text x={Number(p.x) + 6} y={Number(p.y) + 4 + offsets[si]} fill="var(--ink)" fontSize={11} fontWeight={700}>{`${s.name} ${String(p.value)}${unit}`}</text>
               ) : <g />}
           />
         ))}
@@ -85,7 +89,7 @@ export function Donut({ data, unit = "holes", size = 170 }: { data: Slice[]; uni
   const arcs = data.map((s, i) => {
     const a0 = starts[i], a1 = a0 + (s.value / total) * Math.PI * 2;
     const big = a1 - a0 > Math.PI ? 1 : 0;
-    const p = (a: number, r: number) => `${cx + r * Math.cos(a)} ${cy + r * Math.sin(a)}`;
+    const p = (a: number, r: number) => `${f2(cx + r * Math.cos(a))} ${f2(cy + r * Math.sin(a))}`;
     const d = data.length === 1
       ? `M ${p(a0, R)} A ${R} ${R} 0 1 1 ${p(a0 + Math.PI, R)} A ${R} ${R} 0 1 1 ${p(a0, R)} M ${p(a0, r0)} A ${r0} ${r0} 0 1 0 ${p(a0 + Math.PI, r0)} A ${r0} ${r0} 0 1 0 ${p(a0, r0)}`
       : `M ${p(a0, R)} A ${R} ${R} 0 ${big} 1 ${p(a1, R)} L ${p(a1, r0)} A ${r0} ${r0} 0 ${big} 0 ${p(a0, r0)} Z`;
@@ -94,7 +98,7 @@ export function Donut({ data, unit = "holes", size = 170 }: { data: Slice[]; uni
   return (
     <div className="flex flex-wrap items-center justify-center gap-5">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${total} ${unit}`}>
-        {arcs.map((a) => <path key={a.name} d={a.d} fill={a.color} stroke="var(--surface)" strokeWidth={2} fillRule="evenodd"><title>{a.name}: {a.value} {unit} ({a.pct}%)</title></path>)}
+        {arcs.map((a) => <path key={a.name} d={a.d} fill={a.color} stroke="var(--surface)" strokeWidth={2} fillRule="evenodd"><title>{`${a.name}: ${a.value} ${unit} (${a.pct}%)`}</title></path>)}
         <text x={cx} y={cy - 2} textAnchor="middle" fill="var(--ink)" fontSize={22} fontWeight={700}>{total}</text>
         <text x={cx} y={cy + 14} textAnchor="middle" fill="var(--viz-muted)" fontSize={11}>{unit}</text>
       </svg>
@@ -144,12 +148,12 @@ function pack(items: Count[]): Packed[] {
   const out: Packed[] = [];
   for (const it of sorted) {
     const r = Math.sqrt(it.value / Math.PI);
-    if (!out.length) { out.push({ ...it, r, x: 0, y: 0 }); continue; }
+    if (!out.length) { out.push({ ...it, r: f2(r), x: 0, y: 0 }); continue; }
     let placed: Packed | null = null;
     for (let t = 0; t < 4000 && !placed; t++) {
       const a = t * 0.17, d = 0.06 * t;
       const x = d * Math.cos(a), y = d * Math.sin(a);
-      if (out.every((o) => Math.hypot(o.x - x, o.y - y) >= o.r + r + 0.02 * r)) placed = { ...it, r, x, y };
+      if (out.every((o) => Math.hypot(o.x - x, o.y - y) >= o.r + r + 0.02 * r)) placed = { ...it, r: f2(r), x: f2(x), y: f2(y) };
     }
     if (placed) out.push(placed);
   }
@@ -164,23 +168,23 @@ export function BubblePack({ data, unit = "hours", height = 260 }: { data: Count
   const minX = Math.min(...circles.map((c) => c.x - c.r)), maxX = Math.max(...circles.map((c) => c.x + c.r));
   const minY = Math.min(...circles.map((c) => c.y - c.r)), maxY = Math.max(...circles.map((c) => c.y + c.r));
   const pad = (maxX - minX) * 0.02;
-  const vb = `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`;
+  const vb = [minX - pad, minY - pad, maxX - minX + pad * 2, maxY - minY + pad * 2].map(f2).join(" ");
   const big = circles[0].r;
   const n = circles.length;
   return (
     <div className="flex flex-col gap-3">
       <svg viewBox={vb} style={{ width: "100%", height }} role="img" aria-label={`Hours by sport, ${n} sports`}>
         {circles.map((c, i) => {
-          const fs = Math.max(0.1, Math.min(c.r * 0.34, big * 0.22));
+          const fs = f2(Math.max(0.1, Math.min(c.r * 0.34, big * 0.22)));
           const showLabel = c.r > big * 0.28;
           return (
             <g key={c.name}>
-              <circle cx={c.x} cy={c.y} r={c.r} fill={mix([12, 70, 36], [0, 110, 110], n > 1 ? i / (n - 1) : 0)} stroke={NEON} strokeWidth={big * 0.025} />
-              <title>{c.name}: {c.value} {unit}</title>
+              <circle cx={c.x} cy={c.y} r={c.r} fill={mix([12, 70, 36], [0, 110, 110], n > 1 ? i / (n - 1) : 0)} stroke={NEON} strokeWidth={f2(big * 0.025)} />
+              <title>{`${c.name}: ${c.value} ${unit}`}</title>
               {showLabel && (
                 <text x={c.x} y={c.y} textAnchor="middle" fill="#fff" fontWeight={700} fontSize={fs} style={{ pointerEvents: "none" }}>
-                  <tspan x={c.x} dy={-fs * 0.2}>{c.name}</tspan>
-                  <tspan x={c.x} dy={fs * 1.1} fontWeight={400}>{c.value} {unit}</tspan>
+                  <tspan x={c.x} dy={f2(-fs * 0.2)}>{c.name}</tspan>
+                  <tspan x={c.x} dy={f2(fs * 1.1)} fontWeight={400}>{c.value} {unit}</tspan>
                 </text>
               )}
             </g>

@@ -8,6 +8,7 @@ import { CATEGORIES, CHARTS, CHARTS_COOKIE, DEFAULT_CHARTS, encodeSelection, typ
 import { ChartCard, DayBars, GolfChart, RankBars, ScoreLine, Tile, TimeLines, VerticalBars, WeekBars } from "@/components/charts/Charts";
 import { Dumbbell, FriendBars, Heatmap, Histogram, RankList, ScatterFit, YearCalendar } from "@/components/charts/Insights";
 import { BubblePack, CumulativeLines, Donut, SendRateBars, TileRow } from "@/components/charts/Activity";
+import { GroupBars, LiftHeatmap } from "@/components/charts/Extras";
 
 export interface DashData { d: Dashboard; ins: Insights; act: ActivityStats }
 
@@ -24,15 +25,23 @@ function render(id: string, { d, ins, act }: DashData): React.ReactNode {
   switch (id) {
     case "tiles": return <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{d.tiles.map((t) => <Tile key={t.label} {...t} />)}</div>;
     case "habitCalendars": return <YearCalendar views={ins.calendars} year={ins.year} />;
+    case "streaks": return <TileRow tiles={ins.streaks} />;
+    case "weekday": return <GroupBars data={ins.weekday} keys={["fun", "productivity", "sleep"]} names={["Fun meter", "Productivity", "Hours slept"]} max={10} />;
     case "sleep": return <TimeLines data={d.days} keys={["hoursSlept"]} names={["Hours slept"]} unit="h" domain={[0, 12]} area avgKey="sleep7" />;
     case "sleepHist": return <Histogram data={ins.sleepHist} target="8h" />;
     case "funProd": return <TimeLines data={d.days} keys={["fun", "productivity"]} names={["Fun meter", "Productivity"]} domain={[0, 10]} />;
     case "calFun": return <ScatterFit data={ins.calFun} fit={ins.calFunFit} xLabel="Calories" yLabel="Fun" />;
+    case "sleepFun": return <ScatterFit data={ins.sleepFun} fit={ins.sleepFunFit} xLabel="Hours slept" yLabel="Fun" />;
+    case "hours": return <GroupBars data={ins.hours} keys={["bed", "wake"]} names={["Bedtime", "Wake-up"]} unit="" fmt={(v) => String(Math.round(v))} />;
+    case "battery": return <Histogram data={ins.battery} subject="battery" noun="mornings" />;
+    case "funSky": return <RankBars data={ins.funBySky} unit="Avg fun" max={10} />;
     case "steps": return weekly ? <WeekBars data={d.weeks} keys={["stepsAvg"]} names={["Avg steps"]} /> : <DayBars data={d.days} dataKey="steps" name="Steps" avgKey="steps7" />;
     case "gymWeeks": return <WeekBars data={d.weeks} keys={["gymDays"]} names={["Gym days"]} />;
     case "hrSpread": return <Dumbbell data={ins.hrByMonth} />;
     case "restingHR": return <TimeLines data={d.days} keys={["restingHR"]} names={["Resting HR"]} domain={[40, "auto"] as unknown as [number, number]} />;
     case "sportBubbles": return <BubblePack data={ins.sportHours} />;
+    case "sportDays": return <RankBars data={ins.sportDays} />;
+    case "stepsWeekday": return <GroupBars data={ins.weekday} keys={["steps"]} names={["Avg steps"]} labels fmt={(v) => Math.round(v).toLocaleString("en-US")} />;
     case "golfTiles": return <TileRow tiles={act.golf.tiles} />;
     case "golfScores18": return <ScoreLine data={act.golf.scores18} />;
     case "golfToPar": return <GolfChart data={d.golf} />;
@@ -40,11 +49,27 @@ function render(id: string, { d, ins, act }: DashData): React.ReactNode {
     case "golfCumulative": return <CumulativeLines data={act.golf.cumulative} />;
     case "golfPutts": return <RankBars data={act.golf.putts} unit="Holes" />;
     case "golfCourses": return <RankBars data={act.golf.courses} unit="Rounds" labelWidth={150} />;
+    case "golfFairways": return <CumulativeLines data={act.golf.fairwaysGreens} yMax={100} unit="%" />;
+    case "golfByCourse": return <RankBars data={act.golf.byCourse} unit="Over par" labelWidth={150} />;
+    case "golfCart": return <RankBars data={act.golf.cart} unit="Median score" />;
+    case "miniTiles": return <TileRow tiles={act.miniGolf.tiles} />;
+    case "miniScores": return <ScoreLine data={act.miniGolf.scores} yKey="toPar" />;
+    case "miniPutts": return <Donut data={act.miniGolf.putts} unit="holes" />;
+    case "miniCourses": return <RankBars data={act.miniGolf.courses} unit="Rounds" labelWidth={150} />;
+    case "miniWinners": return <RankBars data={act.miniGolf.winners} unit="Wins" />;
+    case "discTiles": return <TileRow tiles={act.discGolf.tiles} />;
+    case "discScores": return <ScoreLine data={act.discGolf.scores} yKey="toPar" />;
+    case "discOutcomes": return <Donut data={act.discGolf.outcomes} unit="holes" />;
+    case "discCumulative": return <CumulativeLines data={act.discGolf.cumulative} />;
+    case "discCourses": return <RankBars data={act.discGolf.courses} unit="Rounds" labelWidth={150} />;
+    case "discWinners": return <RankBars data={act.discGolf.winners} unit="Wins" />;
     case "climbTiles": return <TileRow tiles={act.climb.tiles} />;
     case "climbGrades": return <Donut data={act.climb.grades} unit="climbs" />;
     case "climbCumulative": return <CumulativeLines data={act.climb.cumulative} />;
     case "climbSendRate": return <SendRateBars data={act.climb.sendRate} />;
     case "climbGyms": return <RankBars data={act.climb.gyms} unit="Sessions" />;
+    case "climbColors": return <Donut data={act.climb.colors} unit="climbs" />;
+    case "climbColorRate": return <SendRateBars data={act.climb.colorSendRate} />;
     case "skiTiles": return <TileRow tiles={act.ski.tiles} />;
     case "skiRuns": return <Donut data={act.ski.runs} unit="runs" />;
     case "skiCumulative": return <CumulativeLines data={act.ski.cumulative} />;
@@ -60,17 +85,31 @@ function render(id: string, { d, ins, act }: DashData): React.ReactNode {
     case "snacks": return <RankBars data={ins.snacks} />;
     case "candy": return <RankBars data={ins.candy} />;
     case "candySeason": return <Heatmap data={ins.candySeason} />;
+    case "candyVeg": return <LiftHeatmap data={ins.candyVeg} />;
+    case "drinkTypes": return <RankBars data={ins.drinkTypes} />;
+    case "cuisineRatings": return <RankBars data={ins.cuisineRatings} unit="Avg rating" max={10} />;
     case "shirtColors": return <RankBars data={d.shirtColors} colorByName />;
     case "greenShades": return <VerticalBars data={ins.greenShades} unit="Wears" colorByName />;
     case "brands": return <VerticalBars data={ins.brands} unit="Wears" />;
     case "outfits": return <RankList data={ins.outfits} />;
+    case "jacketTemp": return <GroupBars data={ins.jacketByTemp} keys={["jacket", "hat", "layers"]} names={["Jacket", "Hat", "2 layers"]} unit="%" max={100} fmt={(v) => String(Math.round(v))} />;
     case "people": return <RankBars data={d.people} />;
     case "friendFun": return <FriendBars data={ins.friends} />;
     case "sky": return <RankBars data={d.sky} />;
     case "wakeCities": return <RankBars data={d.wakeCities} />;
     case "transit": return <RankBars data={ins.transit} unit="Rides" />;
     case "states": return <RankBars data={ins.states} />;
+    case "temps": return <TimeLines data={d.days} keys={["high", "low"]} names={["High", "Low"]} unit="°" />;
+    case "projects": return <RankBars data={ins.projects} />;
+    case "projectProd": return <RankBars data={ins.projectProd} unit="Avg productivity" max={10} />;
     case "videoGames": return <RankBars data={d.videoGames} />;
+    case "gameRatings": return <RankBars data={ins.ratings.games} unit="Rating" max={10} labelWidth={150} />;
+    case "boardGames": return <RankBars data={ins.boardGames} />;
+    case "tvRatings": return <RankBars data={ins.ratings.tv} unit="Rating" max={10} labelWidth={190} />;
+    case "movieRatings": return <RankBars data={ins.ratings.movies} unit="Rating" max={10} labelWidth={150} />;
+    case "broadwayRatings": return <RankBars data={ins.ratings.broadway} unit="Rating" max={10} labelWidth={150} />;
+    case "shows": return <RankBars data={ins.shows} unit="Meals" labelWidth={170} />;
+    case "services": return <RankBars data={ins.services} unit="Meals" />;
     default: return null;
   }
 }
@@ -79,6 +118,8 @@ function render(id: string, { d, ins, act }: DashData): React.ReactNode {
 function subFor(c: ChartDef, data: DashData): string | undefined {
   if (c.id === "golfOutcomes" || c.id === "golfPutts") return data.act.golf.note;
   if (c.id === "steps" && data.d.days.length > 60) return "Average steps per day, by week";
+  if (c.id === "miniTiles" || c.id === "miniScores") return data.act.miniGolf.rounds ? `${data.act.miniGolf.rounds} rounds in range` : "No mini golf in range";
+  if (c.id === "discTiles" || c.id === "discScores") return data.act.discGolf.rounds ? `${data.act.discGolf.rounds} rounds in range` : "No disc golf in range";
   return c.sub;
 }
 

@@ -106,19 +106,19 @@ export function ColorBars({ data, unit = "Days", height }: { data: Count[]; unit
 
 /* ───────────── Histogram with a target line ───────────── */
 
-export function Histogram({ data, target, height = 220 }: { data: { bin: string; days: number }[]; target?: string; height?: number }) {
+export function Histogram({ data, target, height = 220, subject = "slept", noun = "nights" }: { data: { bin: string; days: number }[]; target?: string; height?: number; subject?: string; noun?: string }) {
   if (!data.length) return <Empty />;
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 16, right: 12, left: -10, bottom: 0 }} barCategoryGap={2}>
         <CartesianGrid vertical={false} stroke="var(--viz-grid)" />
-        <XAxis dataKey="bin" {...axis} interval={0} />
+        <XAxis dataKey="bin" {...axis} interval={data.length > 8 ? 1 : 0} tick={{ fill: "var(--viz-muted)", fontSize: data.length > 8 ? 10 : 11 }} />
         <YAxis {...axis} width={44} allowDecimals={false} />
         <Tooltip cursor={{ fill: "var(--surface-2)" }} content={({ active, payload, label }) => active && payload?.length ? (
-          <div className={tipBox}><span className="text-ink-2">{label} slept</span> <span className="ml-2 font-bold">{payload[0].value} nights</span></div>
+          <div className={tipBox}><span className="text-ink-2">{label} {subject}</span> <span className="ml-2 font-bold">{payload[0].value} {noun}</span></div>
         ) : null} />
         {target && <ReferenceLine x={target} stroke="#d8dcd4" strokeDasharray="5 3" />}
-        <Bar isAnimationActive={false} dataKey="days" name="Nights" fill="var(--viz-fill)" stroke={NEON} strokeWidth={1} maxBarSize={40}>
+        <Bar isAnimationActive={false} dataKey="days" name={noun} fill="var(--viz-fill)" stroke={NEON} strokeWidth={1} maxBarSize={40}>
           <LabelList dataKey="days" position="top" style={{ ...labelStyle, fontSize: 11 }} formatter={(v: unknown) => (Number(v) ? String(v) : "")} />
         </Bar>
       </BarChart>

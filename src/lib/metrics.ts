@@ -18,6 +18,7 @@ export interface DayPoint {
   steps: number | null;
   restingHR: number | null;
   high: number | null;
+  low: number | null;
   drinks: number;
   gym: boolean;
   cardio: boolean;
@@ -159,7 +160,7 @@ export async function buildDashboard(range: Range, month?: string): Promise<Dash
       date: r.Date,
       hoursSlept: num(r["Hours slept"]), sleepQuality: num(r["Sleep Quality (1-10)"]),
       fun: num(r["Fun Meter (1-10)"]), productivity: num(r["Productivity (1-10)"]),
-      steps: num(r["Steps Taken"]), restingHR: num(r["Resting Heart Rate"]), high: num(r["High Temperature (F)"]),
+      steps: num(r["Steps Taken"]), restingHR: num(r["Resting Heart Rate"]), high: num(r["High Temperature (F)"]), low: num(r["Low Temperature (F)"]),
       drinks: num(r["# of Drinks"]) ?? 0,
       gym: bool(r["Gym?"]), cardio: bool(r["Cardio?"]), lifting: bool(r["Lifting?"]),
       cookedMeals: cooked, restaurantMeals: restaurant, sleep7: null, steps7: null,
