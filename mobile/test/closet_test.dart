@@ -16,6 +16,39 @@ void main() {
     expect(ClosetItem.fromJson({'id': '1', 'label': 'x', 'values': {}}).hasImage, isFalse);
   });
 
+  test('short color family guess mirrors the server', () {
+    expect(AddPieceSheetGuess.guess('Hunter Green'), 'Green');
+    expect(AddPieceSheetGuess.guess('Navy Blue'), 'Blue');
+    expect(AddPieceSheetGuess.guess('Charcoal Heather'), 'Gray');
+    expect(AddPieceSheetGuess.guess('Paisley'), '');
+  });
+
+  testWidgets('add-piece sheet renders the columns, marks required ones and preselects the guessed family', (tester) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({'baseUrl': 'http://127.0.0.1:1', 'password': ''});
+    final settings = await AppSettings.load();
+    final form = ClosetKindForm.fromJson({
+      'kind': 'shirt', 'nextId': '142',
+      'columns': [
+        {'key': 'Shirt Type', 'label': 'Type', 'type': 'suggest', 'required': false, 'options': ['T-Shirt', 'Polo']},
+        {'key': 'Shirt Color Primary', 'label': 'Color Primary', 'type': 'suggest', 'required': true, 'options': ['Lime Green']},
+        {'key': 'Shirt Color Short', 'label': 'Color Short', 'type': 'select', 'required': true, 'options': ['Green', 'Blue']},
+      ],
+    });
+    await tester.pumpWidget(ApiScope(settings: settings, child: MaterialApp(home: Scaffold(body: AddPieceSheet(kind: 'shirt', form: form)))));
+    await tester.pump();
+    expect(find.text('#142'), findsOneWidget);
+    expect(find.text('New shirt'), findsOneWidget);
+    expect(find.text('Color Primary *'), findsOneWidget);
+    expect(find.text('Type'), findsOneWidget);
+    await tester.tap(find.text('Add to closet'));
+    await tester.pump();
+    expect(find.text('Color Primary is required.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   test('kind labels', () {
     expect(kindLabel('shoes'), 'Shoes');
     expect(kindLabel('pants'), 'Pants');

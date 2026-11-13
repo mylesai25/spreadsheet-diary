@@ -156,6 +156,14 @@ class ApiClient {
   Future<CalendarPage> calendar({String? month}) async => CalendarPage.fromJson(await _get('/api/calendar', {if (month != null) 'month': month}));
   Future<ClosetStats> closetStats() async => ClosetStats.fromJson(await _get('/api/closet/stats'));
 
+  /// Form specs for adding a piece to each closet tab (columns, suggestions, next id).
+  Future<List<ClosetKindForm>> closetForms() async =>
+      ((await _get('/api/closet/options'))['forms'] as List).map((e) => ClosetKindForm.fromJson(e as Map<String, dynamic>)).toList();
+
+  /// Append a piece to a closet tab; values keyed by the tab's columns. The server assigns the id.
+  Future<ClosetItem> addClosetItem(String kind, Map<String, String> values) async =>
+      ClosetItem.fromJson((await _post('/api/closet/$kind', {'values': values}))['item'] as Map<String, dynamic>);
+
   /// Attach a photo to a closet piece: raw image bytes, returns the new server-relative image URL.
   Future<String> uploadClosetPhoto(String kind, String id, Uint8List bytes, String mime) async {
     final uri = Uri.parse('$baseUrl/api/closet/photo/$kind/${Uri.encodeComponent(id)}');

@@ -85,13 +85,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 32),
           const FigHeading('Virtual Closet'),
           const SizedBox(height: 4),
-          Text('Every piece in the Virtual Closet sheet, by kind, with its description. Attach a photo to each one from the camera or your library; it’s linked from the sheet so the outfit pickers can show it.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          Text('Every piece in the Virtual Closet sheet, by kind, with its description. Add new pieces straight into the sheet, and attach a photo to each one from the camera or your library so the outfit pickers can show it.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 8),
           Card(
             child: ListTile(
               leading: const Icon(Icons.checkroom, color: Fig.neon),
               title: const Text('Browse the closet'),
-              subtitle: const Text('Shirts, pants, shoes, socks, hats, jackets · add photos'),
+              subtitle: const Text('Shirts, pants, shoes, socks, hats, jackets · add pieces and photos'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClosetScreen())),
             ),

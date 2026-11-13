@@ -7,6 +7,7 @@ import '../api/client.dart';
 import '../main.dart';
 import '../models/models.dart';
 import '../theme.dart';
+import '../widgets/fields.dart' show FieldLabel, SelectField;
 
 const _kinds = [('shirt', 'Shirts'), ('pants', 'Pants'), ('shoes', 'Shoes'), ('socks', 'Socks'), ('hat', 'Hats'), ('jacket', 'Jackets')];
 
@@ -63,6 +64,42 @@ class _ClosetScreenState extends State<ClosetScreen> {
     }).toList();
   }
 
+  List<ClosetKindForm>? _forms;
+  bool _formsLoading = false;
+
+  Future<void> _add() async {
+    final api = ApiScope.api(context);
+    if (_forms == null) {
+      setState(() => _formsLoading = true);
+      try {
+        _forms = await api.closetForms();
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not load the form: $e')));
+        return;
+      } finally {
+        if (mounted) setState(() => _formsLoading = false);
+      }
+    }
+    if (!mounted) return;
+    final form = _forms!.firstWhere((f) => f.kind == _kind);
+    final added = await showModalBottomSheet<ClosetItem>(
+      context: context, isScrollControlled: true, useSafeArea: true,
+      builder: (_) => AddPieceSheet(kind: _kind, form: form),
+    );
+    if (added == null || !mounted) return;
+    _forms = null;   // suggestions and next id have moved on
+    try {
+      final c = await ClosetCache.refresh(api);
+      if (mounted) setState(() => _closet = c);
+    } catch (_) {
+      setState(() => _closet?[_kind]?.add(added));
+    }
+    if (!mounted) return;
+    _search.clear();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Added ${_singular(_kind).toLowerCase()} #${added.id} — add a photo?'), duration: const Duration(seconds: 2)));
+    await _open(added);
+  }
+
   Future<void> _open(ClosetItem item) async {
     final updated = await showModalBottomSheet<ClosetItem>(
       context: context, isScrollControlled: true, useSafeArea: true,
@@ -87,6 +124,12 @@ class _ClosetScreenState extends State<ClosetScreen> {
       appBar: AppBar(
         title: const Text('Virtual Closet'),
         actions: [IconButton(icon: const Icon(Icons.refresh), tooltip: 'Reload from the sheet', onPressed: () => _load(force: true))],
+      ),
+      floatingActionButton: _closet == null ? null : FloatingActionButton.extended(
+        onPressed: _formsLoading ? null : _add,
+        backgroundColor: Fig.neon, foregroundColor: Fig.paper,
+        icon: _formsLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Fig.paper)) : const Icon(Icons.add),
+        label: Text('Add ${_singular(_kind).toLowerCase()}'),
       ),
       body: _closet == null && _error == null
           ? const Center(child: CircularProgressIndicator())
@@ -146,7 +189,7 @@ class _ClosetScreenState extends State<ClosetScreen> {
                         child: items.isEmpty
                             ? ListView(padding: const EdgeInsets.all(24), children: [Text(_photosOnly ? 'No ${kindLabel(_kind).toLowerCase()} with a photo yet — tap a piece to add one.' : 'Nothing matches.', style: Fig.small)])
                             : GridView.builder(
-                                padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                                padding: const EdgeInsets.fromLTRB(12, 4, 12, 88),
                                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 0.72),
                                 itemCount: items.length,
                                 itemBuilder: (context, i) => PieceCard(item: items[i], api: api, onTap: () => _open(items[i])),
@@ -348,6 +391,114 @@ class _PieceSheetState extends State<PieceSheet> {
             ),
             const SizedBox(height: 8),
             Text('Edit the description in the Virtual Closet sheet; the photo is linked from its “${_singular(widget.kind)} Image” column.', style: Fig.smallMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Test seam for the short-color guess used by [AddPieceSheet].
+class AddPieceSheetGuess {
+  static String guess(String primary) => _AddPieceSheetState.guessShort(primary);
+}
+
+/// Add a piece to a closet tab: one input per sheet column, with suggestions from what's already there.
+/// Pops with the new item (the server assigns the id).
+class AddPieceSheet extends StatefulWidget {
+  const AddPieceSheet({super.key, required this.kind, required this.form});
+  final String kind;
+  final ClosetKindForm form;
+  @override
+  State<AddPieceSheet> createState() => _AddPieceSheetState();
+}
+
+class _AddPieceSheetState extends State<AddPieceSheet> {
+  final Map<String, String> _values = {};
+  bool _busy = false;
+  String? _error;
+
+  ClosetColumn? _col(String label) => widget.form.columns.where((c) => c.label == label).firstOrNull;
+  String _v(ClosetColumn c) => _values[c.key] ?? '';
+
+  /// Mirror of the server's family guess, so the chips show what will be stored if nothing is picked.
+  static String guessShort(String primary) {
+    final p = primary.toLowerCase();
+    const fams = <String, List<String>>{
+      'Green': ['green', 'lime', 'olive', 'eucalyptus', 'pistachio', 'mint', 'emerald', 'seafoam', 'nyanza', 'sage', 'fern', 'moss', 'teal', 'jungle', 'hunter', 'forest', 'kelly', 'army', 'cadmium'],
+      'Blue': ['blue', 'navy', 'cyan', 'cerulean', 'cornflour', 'royal'],
+      'Black': ['black'], 'White': ['white', 'cream', 'ivory'], 'Gray': ['gray', 'grey', 'silver', 'charcoal'],
+      'Brown': ['brown', 'tan', 'khaki', 'beige', 'camel'], 'Red': ['red', 'crimson', 'maroon', 'burgundy'],
+      'Purple': ['purple', 'violet', 'lavender', 'magenta'], 'Yellow': ['yellow', 'gold'], 'Orange': ['orange'], 'Pink': ['pink'],
+    };
+    for (final e in fams.entries) {
+      if (e.value.any(p.contains)) return e.key;
+    }
+    return '';
+  }
+
+  Future<void> _save() async {
+    final primary = _col('Color Primary');
+    if (primary != null && _v(primary).trim().isEmpty) {
+      setState(() => _error = 'Color Primary is required.');
+      return;
+    }
+    final short = _col('Color Short');
+    if (short != null && _v(short).isEmpty && guessShort(_v(primary!)).isEmpty) {
+      setState(() => _error = 'Pick a color family — none matches "${_v(primary)}".');
+      return;
+    }
+    setState(() { _busy = true; _error = null; });
+    try {
+      final item = await ApiScope.api(context).addClosetItem(widget.kind, {for (final e in _values.entries) if (e.value.trim().isNotEmpty) e.key: e.value.trim()});
+      if (mounted) Navigator.pop(context, item);
+    } catch (e) {
+      if (mounted) setState(() { _error = 'Could not add: $e'; _busy = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = _col('Color Primary');
+    final guess = primary == null ? '' : guessShort(_v(primary));
+    final swatch = primary == null ? null : Fig.colorFor(_v(primary).trim());
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: DraggableScrollableSheet(
+        expand: false, initialChildSize: 0.9, maxChildSize: 0.95, minChildSize: 0.5,
+        builder: (context, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+          children: [
+            Row(children: [
+              Text('#${widget.form.nextId}', style: const TextStyle(color: Fig.neon, fontSize: 20, fontWeight: FontWeight.w800, fontFeatures: [FontFeature.tabularFigures()])),
+              const SizedBox(width: 10),
+              Expanded(child: Text('New ${_singular(widget.kind).toLowerCase()}', style: Fig.cardTitle)),
+              if (swatch != null) Container(width: 18, height: 18, decoration: BoxDecoration(color: swatch, shape: BoxShape.circle, border: Border.all(color: Fig.border))),
+              IconButton(icon: const Icon(Icons.close), onPressed: _busy ? null : () => Navigator.pop(context)),
+            ]),
+            const SizedBox(height: 4),
+            Text('Goes straight into the ${_singular(widget.kind)} tab of the Virtual Closet sheet. Type freely or pick a suggestion.', style: Fig.smallMuted),
+            const SizedBox(height: 12),
+            for (final c in widget.form.columns) ...[
+              FieldLabel(c.required ? '${c.label} *' : c.label),
+              if (c.isSelect)
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  for (final o in {...c.options, if (guess.isNotEmpty) guess})
+                    ChoiceChip(
+                      label: Text(o), showCheckmark: false,
+                      avatar: Fig.colorFor(o) == null ? null : CircleAvatar(backgroundColor: Fig.colorFor(o), radius: 6),
+                      selected: _v(c) == o || (_v(c).isEmpty && o == guess),
+                      onSelected: (_) => setState(() => _values[c.key] = o),
+                    ),
+                ])
+              else
+                SelectField(value: _v(c), options: c.options, onChanged: (v) => setState(() => _values[c.key] = v)),
+              if (c.isSelect && _v(c).isEmpty && guess.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text('Guessed from the primary color; tap another to override.', style: Fig.smallMuted)),
+              const SizedBox(height: 14),
+            ],
+            if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(_error!, style: const TextStyle(color: Fig.red, fontSize: 13))),
+            FilledButton.icon(onPressed: _busy ? null : _save, icon: _busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Fig.paper)) : const Icon(Icons.check), label: Text(_busy ? 'Adding…' : 'Add to closet')),
           ],
         ),
       ),

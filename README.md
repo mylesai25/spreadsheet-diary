@@ -37,8 +37,9 @@ It reads and writes the Google Sheet directly — the sheet stays the source of 
   "Same period" trims the prior year to Jan 1 → today's date for a fair comparison. Prior-year sheets are read-only.
 - **Activities** (`/activities/<sheet>`) — add rows to Golf, Restaurant, Mini-Golf, Disc Golf, Climbing,
   Skiing, Video Game Rankings and Year Rankings, with recent entries listed.
-- **Virtual Closet photos** — every piece in the closet sheet can carry a photo. The phone app (Settings › Virtual Closet)
-  browses the closet by kind and attaches a picture from the camera or library; the server stores the file in a private S3
+- **Virtual Closet** — the phone app (Settings › Virtual Closet) browses the closet sheet by kind, **adds new pieces** (one input per
+  column with suggestions from existing rows; the id is assigned and the short color family guessed from the primary color) and attaches
+  a **photo** to any piece from the camera or library; the server stores the file in a private S3
   bucket (see *Closet photos*) and writes an `s3://` reference into a `<Kind> Image` column on that tab (`Shirt Image`,
   `Shoe Image`…), created on first use. Pickers show the thumbnails. In CSV mode the files live under `data/closet/photos/`.
 
@@ -109,6 +110,7 @@ A native client (iOS / Android / macOS / web) that uses this app as its backend 
 | `GET /api/outfits?date=&feels=&high=&sky=&seen=&seed=` | weather-aware outfit suggestions; pass back `shownKeys` as `seen` and bump `seed` for a new set |
 | `GET /api/dashboard?range=` | dashboard metrics |
 | `GET /api/closet` · `GET /api/closet/stats` | the Virtual Closet pickers (with `image` URLs) · closet composition |
+| `GET /api/closet/options` · `POST /api/closet/:kind` | add-a-piece form specs (columns, suggestions, next id) · append a piece to that tab (id assigned, short color guessed) |
 | `GET` / `POST` / `DELETE /api/closet/photo/:kind/:id` | a piece's photo: fetch it (ETag) · upload raw `image/jpeg|png|webp` bytes · remove it |
 | `GET /api/activities` · `GET/POST /api/activities/:slug` | activity sheets |
 
@@ -131,6 +133,7 @@ src/lib/outfits.ts        weather-aware outfit suggester (similar-day scoring + 
 src/app/api/              JSON API used by the Flutter client (incl. /api/closet/stats for the Closet tab)
 src/lib/closetStats.ts    Virtual Closet composition: green share, color families/shades, brands, wear this year
 src/lib/closetPhotos.ts   closet piece photos: S3 put/get/delete (or data/closet/photos in CSV mode), "<Kind> Image" column
+src/lib/closetEdit.ts     add a piece: per-kind form spec with suggestions, next id, short-color guess, append
 src/proxy.ts              optional password gate (active only when APP_PASSWORD is set; /api uses bearer auth)
 mobile/                   Flutter client (see mobile/README.md)
 data/                     xlsx exports + per-sheet CSVs: csv/ (2026), csv-2025/, csv-2024/ (Sept 22, 2026 snapshot), closet/ (Sept 23, 2026)

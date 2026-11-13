@@ -97,6 +97,24 @@ class ClosetItem {
   }
 }
 
+/// One column of the "add a piece" form (from /api/closet/options).
+class ClosetColumn {
+  ClosetColumn({required this.key, required this.label, required this.isSelect, required this.required, required this.options});
+  final String key, label;
+  final bool isSelect, required;
+  final List<String> options;
+  factory ClosetColumn.fromJson(Map<String, dynamic> j) => ClosetColumn(
+      key: _s(j['key']), label: _s(j['label']), isSelect: j['type'] == 'select', required: j['required'] == true, options: (j['options'] as List? ?? []).map(_s).toList());
+}
+
+class ClosetKindForm {
+  ClosetKindForm({required this.kind, required this.columns, required this.nextId});
+  final String kind, nextId;
+  final List<ClosetColumn> columns;
+  factory ClosetKindForm.fromJson(Map<String, dynamic> j) =>
+      ClosetKindForm(kind: _s(j['kind']), nextId: _s(j['nextId']), columns: (j['columns'] as List? ?? []).map((e) => ClosetColumn.fromJson(e as Map<String, dynamic>)).toList());
+}
+
 class DailyData {
   DailyData({
     required this.date, required this.today, required this.values, required this.defaults, required this.prev, this.prevDate,
