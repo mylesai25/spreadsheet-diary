@@ -77,10 +77,24 @@ class Section {
 }
 
 class ClosetItem {
-  ClosetItem(this.id, this.label, this.values);
+  ClosetItem(this.id, this.label, this.values, {this.image});
   final String id, label;
   final Map<String, String> values;
-  factory ClosetItem.fromJson(Map<String, dynamic> j) => ClosetItem(_s(j['id']), _s(j['label']), _strMap(j['values']));
+  /// Photo path relative to the server (e.g. /api/closet/photo/shirt/12?v=…), null when none is attached.
+  final String? image;
+  bool get hasImage => image != null && image!.isNotEmpty;
+  factory ClosetItem.fromJson(Map<String, dynamic> j) =>
+      ClosetItem(_s(j['id']), _s(j['label']), _strMap(j['values']), image: (j['image'] as String?)?.isEmpty == true ? null : j['image'] as String?);
+  Map<String, dynamic> toJson() => {'id': id, 'label': label, 'values': values, if (image != null) 'image': image};
+  ClosetItem withImage(String? image) => ClosetItem(id, label, values, image: image);
+
+  /// A value by the tail of its column name ("Color Primary", "Type", "Brand"/"Company"…), regardless of the kind prefix.
+  String col(String suffix) {
+    for (final e in values.entries) {
+      if (e.key.endsWith(suffix)) return e.value.trim();
+    }
+    return '';
+  }
 }
 
 class DailyData {

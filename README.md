@@ -37,6 +37,10 @@ It reads and writes the Google Sheet directly — the sheet stays the source of 
   "Same period" trims the prior year to Jan 1 → today's date for a fair comparison. Prior-year sheets are read-only.
 - **Activities** (`/activities/<sheet>`) — add rows to Golf, Restaurant, Mini-Golf, Disc Golf, Climbing,
   Skiing, Video Game Rankings and Year Rankings, with recent entries listed.
+- **Virtual Closet photos** — every piece in the closet sheet can carry a photo. The phone app (Settings › Virtual Closet)
+  browses the closet by kind and attaches a picture from the camera or library; the server stores the file in a private S3
+  bucket (see *Closet photos*) and writes an `s3://` reference into a `<Kind> Image` column on that tab (`Shirt Image`,
+  `Shoe Image`…), created on first use. Pickers show the thumbnails. In CSV mode the files live under `data/closet/photos/`.
 
 ## Run it
 
@@ -59,8 +63,21 @@ gcloud auth login                 # if your gcloud session has expired
 Then share **Spreadsheet_Journal_2026** and **Virtual_Closet_Spreadsheet** with the printed
 `…@….iam.gserviceaccount.com` address as *Editor*. Restart `npm run dev`.
 
+### Closet photos (S3, one time)
+
+Photos of closet pieces are stored in a private S3 bucket; the sheet only holds the `s3://bucket/key` reference and the app
+streams the bytes behind its own login. With the AWS CLI signed in (`aws configure` or `aws sso login`):
+
+```bash
+./scripts/setup-s3.sh [bucket-name] [region]   # creates the bucket (private, versioning off), an IAM user limited to it, writes .env.local
+```
+
+No CLI? In the AWS console make a bucket with public access blocked, an IAM user with Put/Get/DeleteObject on that bucket,
+an access key for it, and set `S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` in `.env.local`
+(and on Vercel). Objects are keyed `closet/<kind>-<id>-<stamp>.jpg` (`S3_PREFIX` to change).
+
 Alternative: leave `GOOGLE_SERVICE_ACCOUNT_JSON` empty and use your own login —
-`gcloud auth application-default login --scopes=https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/cloud-platform`.
+`gcloud auth application-default login --scopes=https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive,https://www.googleapis.com/auth/cloud-platform`.
 
 ### Install on iPhone
 
@@ -75,7 +92,7 @@ Live at **https://spreadsheet-diary.vercel.app** (project `spreadsheet-diary`, p
 npx vercel --prod
 ```
 Env vars on Vercel mirror `.env.local` (`SHEET_ID`, `CLOSET_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `APP_TZ`,
-`ANTHROPIC_API_KEY` for Claude outfit ideas)
+`ANTHROPIC_API_KEY` for Claude outfit ideas, `S3_BUCKET` / `AWS_REGION` / `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` for closet photos)
 **plus `APP_PASSWORD`**, which turns on the login gate (and bearer auth for `/api`). `.vercelignore` keeps
 `mobile/` and the data snapshots out of the upload.
 
@@ -91,6 +108,8 @@ A native client (iOS / Android / macOS / web) that uses this app as its backend 
 | `POST /api/weather` | Open‑Meteo lookup for a date + place |
 | `GET /api/outfits?date=&feels=&high=&sky=&seen=&seed=` | weather-aware outfit suggestions; pass back `shownKeys` as `seen` and bump `seed` for a new set |
 | `GET /api/dashboard?range=` | dashboard metrics |
+| `GET /api/closet` · `GET /api/closet/stats` | the Virtual Closet pickers (with `image` URLs) · closet composition |
+| `GET` / `POST` / `DELETE /api/closet/photo/:kind/:id` | a piece's photo: fetch it (ETag) · upload raw `image/jpeg|png|webp` bytes · remove it |
 | `GET /api/activities` · `GET/POST /api/activities/:slug` | activity sheets |
 
 Auth: `Authorization: Bearer <APP_PASSWORD>` (or the web session cookie); open when `APP_PASSWORD` is unset.
@@ -111,12 +130,14 @@ src/lib/metrics.ts        dashboard aggregation
 src/lib/outfits.ts        weather-aware outfit suggester (similar-day scoring + freshness)
 src/app/api/              JSON API used by the Flutter client (incl. /api/closet/stats for the Closet tab)
 src/lib/closetStats.ts    Virtual Closet composition: green share, color families/shades, brands, wear this year
+src/lib/closetPhotos.ts   closet piece photos: S3 put/get/delete (or data/closet/photos in CSV mode), "<Kind> Image" column
 src/proxy.ts              optional password gate (active only when APP_PASSWORD is set; /api uses bearer auth)
 mobile/                   Flutter client (see mobile/README.md)
 data/                     xlsx exports + per-sheet CSVs: csv/ (2026), csv-2025/, csv-2024/ (Sept 22, 2026 snapshot), closet/ (Sept 23, 2026)
 scripts/xlsx2csv.py       stdlib xlsx → CSV converter (refresh data/ from a new export)
 scripts/sheet2csv.mjs     refresh data/closet (or csv/) straight from the live Google Sheet: node scripts/sheet2csv.mjs closet
 scripts/setup-google.sh   service-account bootstrap
+scripts/setup-s3.sh       photo bucket + scoped IAM user bootstrap
 ```
 
 ### Notes on how writes work

@@ -12,7 +12,8 @@ lib/models/models.dart        payload models
 lib/screens/log_screen.dart   Daily Overview form (sections, derived fields, weather, diff-based save)
 lib/screens/dashboard_screen.dart   tiles + fl_chart charts
 lib/screens/activities_screen.dart  activity sheets: add entry + recent
-lib/screens/settings_screen.dart    server URL / password / connection test
+lib/screens/settings_screen.dart    server URL / password / connection test · link to the Virtual Closet
+lib/screens/closet_screen.dart      Virtual Closet browser: pieces by kind with photo or color swatch; take / choose / remove a photo per piece
 lib/widgets/fields.dart       field renderers (toggle, rating, time, autocomplete, chips, closet picker)
 ```
 
@@ -55,6 +56,14 @@ See the script header for the one-time setup (Xcode account, App Store Connect a
 flutter analyze
 flutter test
 ```
+
+## Virtual Closet photos
+
+Settings › Virtual Closet lists every piece from the closet sheet by kind (shirts, pants, shoes, socks, hats, jackets)
+with a search box and a photos-only filter. Tapping a piece opens its description plus **Take photo** / **Choose photo** /
+**Remove photo**. `image_picker` downsizes to ≤1400 px JPEG on the phone, the bytes go to
+`POST /api/closet/photo/<kind>/<id>` and the server files them in S3 and links them from the sheet. The log form's
+closet pickers show the thumbnails. iOS permission strings are in `ios/Runner/Info.plist`.
 
 ## Reminders
 

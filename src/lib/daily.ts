@@ -4,6 +4,7 @@ import { addDays, isoToSerial, isValidISODate, weekStart } from "./dates";
 import { colorFor } from "./colors";
 import { DAILY_AUTO_COLUMNS, DAILY_FIELDS } from "./schema/daily";
 import { CLOSET, type ClosetItem, type ClosetItems } from "./schema/closet";
+import { photoUrl } from "./closetPhotos";
 import { claudeOutfitsEnabled, suggestOutfitsWithClaude } from "./outfitsClaude";
 import type { ClosetKind } from "./schema/types";
 import { getDayWeather, weatherToColumns } from "./weather";
@@ -166,7 +167,8 @@ export async function loadCloset(): Promise<ClosetItems> {
       const values: Record<string, string> = {};
       for (const [dailyCol, closetCol] of Object.entries(cfg.map)) values[dailyCol] = rec[closetCol] ?? "";
       const label = cfg.labelCols.map((c) => rec[c]).filter(Boolean).join(" · ");
-      items.push({ id, label, values });
+      const image = photoUrl(kind, id, rec[cfg.imageCol]);
+      items.push(image ? { id, label, values, image } : { id, label, values });
     }
     out[kind] = items;
   });

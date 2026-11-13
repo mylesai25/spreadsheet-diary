@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../main.dart';
 import '../reminders.dart';
 import '../theme.dart';
+import 'closet_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -81,6 +82,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
           FilledButton.icon(onPressed: _busy ? null : _saveAndTest, icon: const Icon(Icons.wifi_tethering), label: Text(_busy ? 'Testing…' : 'Save & test connection')),
           if (_status != null) Padding(padding: const EdgeInsets.only(top: 10), child: Text(_status!, style: TextStyle(color: _status!.startsWith('Connected') ? cs.primary : cs.error))),
+          const SizedBox(height: 32),
+          const FigHeading('Virtual Closet'),
+          const SizedBox(height: 4),
+          Text('Every piece in the Virtual Closet sheet, by kind, with its description. Attach a photo to each one from the camera or your library; it’s linked from the sheet so the outfit pickers can show it.', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.checkroom, color: Fig.neon),
+              title: const Text('Browse the closet'),
+              subtitle: const Text('Shirts, pants, shoes, socks, hats, jackets · add photos'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClosetScreen())),
+            ),
+          ),
           const SizedBox(height: 32),
           const FigHeading('Reminders'),
           const SizedBox(height: 4),

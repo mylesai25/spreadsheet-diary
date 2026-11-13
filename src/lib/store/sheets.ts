@@ -16,6 +16,14 @@ export const PRIOR_YEAR_SHEET_IDS: Record<string, string> = {
   "2024": "1Fv2YUJiwh0DtsVHzf4QTsmGp2kQVQNfNChAisml13VY",
 };
 
+/** GOOGLE_SERVICE_ACCOUNT_JSON (raw or base64 JSON) → else Application Default Credentials. */
+function googleAuth() {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  return raw
+    ? new google.auth.GoogleAuth({ credentials: JSON.parse(raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8")), scopes: SCOPES })
+    : new google.auth.GoogleAuth({ scopes: SCOPES });
+}
+
 /** Google Sheets store. Auth: GOOGLE_SERVICE_ACCOUNT_JSON (raw or base64 JSON) → else
  *  Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS / gcloud ADC). */
 export class SheetsStore implements Store {
@@ -25,11 +33,7 @@ export class SheetsStore implements Store {
   private cache = new Map<string, { at: number; data: SheetData }>();
 
   constructor() {
-    const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    const auth = raw
-      ? new google.auth.GoogleAuth({ credentials: JSON.parse(raw.trim().startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8")), scopes: SCOPES })
-      : new google.auth.GoogleAuth({ scopes: SCOPES });
-    this.api = google.sheets({ version: "v4", auth });
+    this.api = google.sheets({ version: "v4", auth: googleAuth() });
     this.ids = { journal: process.env.SHEET_ID, closet: process.env.CLOSET_SHEET_ID };
   }
 
@@ -118,6 +122,19 @@ export class SheetsStore implements Store {
     await this.api.spreadsheets.values.batchUpdate({
       spreadsheetId: this.id(book),
       requestBody: { valueInputOption: "USER_ENTERED", data },
+    });
+    this.cache.delete(`${book}:${sheet}`);
+  }
+
+  async ensureColumns(book: Book, sheet: string, headers: string[]) {
+    const { header } = await this.read(book, sheet);
+    const missing = headers.filter((h) => !header.includes(h));
+    if (!missing.length) return;
+    await this.api.spreadsheets.values.update({
+      spreadsheetId: this.id(book),
+      range: `'${sheet}'!${colLetter(header.length)}1`,
+      valueInputOption: "RAW",
+      requestBody: { values: [missing] },
     });
     this.cache.delete(`${book}:${sheet}`);
   }

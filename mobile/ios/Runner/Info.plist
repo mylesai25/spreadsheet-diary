@@ -14,6 +14,10 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Diary connects to your diary server on the local network.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Diary takes photos of your clothes for the Virtual Closet.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Diary attaches photos from your library to Virtual Closet pieces.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

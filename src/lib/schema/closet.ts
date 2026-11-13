@@ -8,6 +8,8 @@ export interface ClosetConfig {
   map: Record<string, string>;
   /** closet columns used to build the picker's display label, in order */
   labelCols: string[];
+  /** closet column holding the piece's photo (a Drive link, or a path under data/closet in CSV mode); added on first upload */
+  imageCol: string;
 }
 
 export const CLOSET: Record<ClosetKind, ClosetConfig> = {
@@ -19,6 +21,7 @@ export const CLOSET: Record<ClosetKind, ClosetConfig> = {
       "Shirt Design": "Shirt Design", "Shirt Color Short": "Shirt Color Short",
     },
     labelCols: ["Shirt Color Primary", "Shirt Type", "Shirt Brand", "Shirt Design"],
+    imageCol: "Shirt Image",
   },
   pants: {
     sheet: "Pants", idCol: "Pants ID",
@@ -28,6 +31,7 @@ export const CLOSET: Record<ClosetKind, ClosetConfig> = {
       "Pants Design": "Pants Design", "Pants Color Short": "Pants Color Short",
     },
     labelCols: ["Pants Color Primary", "Pants Type", "Pants Brand", "Pants Design"],
+    imageCol: "Pants Image",
   },
   shoes: {
     sheet: "Shoes", idCol: "Shoe ID",
@@ -37,6 +41,7 @@ export const CLOSET: Record<ClosetKind, ClosetConfig> = {
       "Shoe Design": "Shoe Design", "Shoe Color Short": "Shoe Color Short",
     },
     labelCols: ["Shoe Color Primary", "Shoe Type", "Shoe Brand", "Shoe Design"],
+    imageCol: "Shoe Image",
   },
   socks: {
     sheet: "Socks", idCol: "Sock ID",
@@ -45,6 +50,7 @@ export const CLOSET: Record<ClosetKind, ClosetConfig> = {
       "Sock Company": "Sock Brand", "Sock Design": "Sock Design", "Sock Color Short": "Sock Color Short",
     },
     labelCols: ["Sock Color Primary", "Sock Brand", "Sock Design"],
+    imageCol: "Sock Image",
   },
   hat: {
     sheet: "Hat", idCol: "Hat ID",
@@ -54,6 +60,7 @@ export const CLOSET: Record<ClosetKind, ClosetConfig> = {
       "Hat Design": "Hat Design", "Hat Color Short": "Hat Color Short",
     },
     labelCols: ["Hat Color Primary", "Hat Type", "Hat Brand", "Hat Design"],
+    imageCol: "Hat Image",
   },
   jacket: {
     sheet: "Jacket", idCol: "Jacket ID",
@@ -63,6 +70,7 @@ export const CLOSET: Record<ClosetKind, ClosetConfig> = {
       "Jacket Design": "Jacket Design", "Jacket Color Short": "Jacket Color Short",
     },
     labelCols: ["Jacket Color Primary", "Jacket Type", "Jacket Brand", "Jacket Design"],
+    imageCol: "Jacket Image",
   },
 };
 
@@ -71,6 +79,8 @@ export interface ClosetItem {
   label: string;
   /** values keyed by DAILY column name, ready to spread into the form */
   values: Record<string, string>;
+  /** Photo URL (relative to the API origin, e.g. /api/closet/photo/shirt/12?v=…) when one has been attached. */
+  image?: string;
 }
 
 export type ClosetItems = Record<ClosetKind, ClosetItem[]>;

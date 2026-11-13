@@ -18,6 +18,8 @@ export interface Store {
   updateCells(book: Book, sheet: string, rowNumber: number, values: Record<string, string>): Promise<void>;
   /** Append a full row (values keyed by header; missing headers are blank). */
   append(book: Book, sheet: string, values: Record<string, string>): Promise<void>;
+  /** Add any of these headers that the sheet doesn't have yet (new columns at the right edge). */
+  ensureColumns(book: Book, sheet: string, headers: string[]): Promise<void>;
 }
 
 /** Columns whose raw sheet values need date/time normalization, per sheet. */

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../main.dart';
 import '../models/models.dart';
+import '../screens/closet_screen.dart' show PiecePhoto;
 import '../theme.dart';
 
 /// Drop focus so the on-screen keyboard (and any suggestion list) goes away.
@@ -337,6 +339,7 @@ class ClosetField extends StatelessWidget {
       child: Row(
         children: [
           if (current != null) ...[
+            if (current.hasImage) Padding(padding: const EdgeInsets.only(right: 8), child: ClipRRect(borderRadius: BorderRadius.circular(4), child: SizedBox(width: 28, height: 28, child: PiecePhoto(item: current, api: ApiScope.api(context), iconSize: 14)))),
             Text('#${current.id}', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800, fontFeatures: [FontFeature.tabularFigures()])),
             const SizedBox(width: 8),
             Expanded(child: Text(current.label, overflow: TextOverflow.ellipsis, style: TextStyle(color: cs.onSurface))),
@@ -379,7 +382,14 @@ class _ClosetSheetState extends State<_ClosetSheet> {
               itemCount: list.length,
               itemBuilder: (context, i) => ListTile(
                 dense: true,
-                leading: Text('#${list[i].id}', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800)),
+                leading: SizedBox(
+                  width: 92,
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    ClipRRect(borderRadius: BorderRadius.circular(4), child: SizedBox(width: 36, height: 36, child: PiecePhoto(item: list[i], api: ApiScope.api(context), iconSize: 16))),
+                    const SizedBox(width: 8),
+                    Text('#${list[i].id}', style: const TextStyle(color: Fig.neon, fontWeight: FontWeight.w800)),
+                  ]),
+                ),
                 title: Text(list[i].label),
                 onTap: () => Navigator.pop(context, list[i]),
               ),

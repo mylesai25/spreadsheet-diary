@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# closet photos in CSV mode (Sheets mode keeps them in Drive)
+/data/closet/photos

@@ -46,6 +46,15 @@ export class CsvStore implements Store {
     await this.write(book, sheet, data);
   }
 
+  async ensureColumns(book: Book, sheet: string, headers: string[]) {
+    const data = await this.read(book, sheet);
+    const missing = headers.filter((h) => !data.header.includes(h));
+    if (!missing.length) return;
+    data.header.push(...missing);
+    data.rows = data.rows.map((r) => padTo(r, data.header.length));
+    await this.write(book, sheet, data);
+  }
+
   private async write(book: Book, sheet: string, data: SheetData) {
     const lines = [data.header, ...data.rows].map((r) => r.map(csvEscape).join(","));
     await fs.writeFile(this.file(book, sheet), lines.join("\n") + "\n", "utf8");
